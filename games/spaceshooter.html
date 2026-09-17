@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Космобій — ІГРОТЕКА</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .wrap { max-width: 700px; margin: 0 auto; padding: 32px 20px 60px; text-align: center; }
+  .back {
+    display: inline-block; font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    color: var(--text-dim); margin-bottom: 24px; border: 1px solid var(--line);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  .back:hover { color: var(--cyan); border-color: var(--cyan); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--text); margin: 0 0 6px; }
+  .status-row { display: flex; justify-content: space-between; max-width: 560px; margin: 18px auto 14px; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--yellow); }
+  #board {
+    background: #0a1830; border: 3px solid var(--line); border-radius: 14px;
+    box-shadow: 0 14px 0 -6px rgba(0,0,0,0.25); max-width: 100%; touch-action: none;
+  }
+  .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 14px; min-height: 22px; }
+  .btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
+    background: var(--cyan); border: none; color: #0a1830; border-radius: 10px; cursor: pointer; margin-top: 10px;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .hint { margin-top: 18px; color: var(--text-dim); font-size: 13px; line-height: 1.7; }
+  .touch-controls { display: none; justify-content: center; gap: 14px; margin-top: 20px; }
+  .touch-controls button {
+    font-family: var(--font-display); background: var(--bg-panel-raised); border: 1px solid var(--line);
+    color: var(--text); border-radius: 10px; font-size: 15px; width: 72px; height: 52px;
+  }
+  @media (hover: none) and (pointer: coarse) { .touch-controls { display: flex; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← До полиці</a>
+  <h1 class="crt-flicker">КОСМОБІЙ</h1>
+  <div class="status-row">
+    <span id="score">РАХУНОК: 0</span>
+    <span id="lives">ЖИТТЯ: 3</span>
+  </div>
+  <canvas id="board" width="640" height="480"></canvas>
+  <div class="overlay-msg" id="msg"></div>
+  <button class="btn" id="startBtn">Старт</button>
+
+  <div class="touch-controls" id="touch">
+    <button data-a="left">◂</button>
+    <button data-a="fire">ВОГОНЬ</button>
+    <button data-a="right">▸</button>
+  </div>
+
+  <p class="hint">◂ ▸ або A/D — рух, пробіл — вогонь (або авто на телефоні). Збивай астероїди, уникай зіткнень.</p>
+</div>
+
+<script src="../engine.js"></script>
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const sound = new Engine.SoundFX();
+const particles = new Engine.Particles();
+const shake = new Engine.ScreenShake();
+Engine.mountMuteButton(sound, document.body);
+Engine.mountCoinBadge(document.body, '../');
+
+const SHIP_SPEED = 340, BULLET_SPEED = 520, FIRE_COOLDOWN = 0.22;
+const isTouchDevice = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+let ship, bullets, rocks, keys, running, loop, score, lives, fireT, spawnT, spawnInterval, msgEl, autoFire;
+msgEl = document.getElementById('msg');
+
+function reset() {
+  ship = { x: W/2, y: H-46, w: 30, h: 26 };
+  bullets = [];
+  rocks = [];
+  score = 0;
+  lives = 3;
+  fireT = 0;
+  spawnT = 0;
+  spawnInterval = 0.9;
+  autoFire = isTouchDevice;
+  document.getElementById('score').textContent = 'РАХУНОК: 0';
+  document.getElementById('lives').textContent = 'ЖИТТЯ: 3';
+  msgEl.textContent = '';
+}
+
+keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if ([' ','ArrowLeft','ArrowRight','a','d','A','D'].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+document.getElementById('touch').addEventListener('pointerdown', e => {
+  const a = e.target.dataset.a;
+  if (a === 'left') keys['ArrowLeft'] = true;
+  if (a === 'right') keys['ArrowRight'] = true;
+  if (a === 'fire') keys[' '] = true;
+});
+document.getElementById('touch').addEventListener('pointerup', e => {
+  const a = e.target.dataset.a;
+  if (a === 'left') keys['ArrowLeft'] = false;
+  if (a === 'right') keys['ArrowRight'] = false;
+  if (a === 'fire') keys[' '] = false;
+});
+
+function spawnRock() {
+  const r = 14 + Math.random()*18;
+  rocks.push({
+    x: r + Math.random()*(W-2*r), y: -r,
+    r, vy: 60 + Math.random()*70 + score*0.4,
+    vx: (Math.random()-0.5)*40,
+    spin: (Math.random()-0.5)*2
+  });
+}
+
+function fire() {
+  bullets.push({ x: ship.x, y: ship.y - ship.h/2, vy: -BULLET_SPEED });
+  sound.rotate();
+}
+
+function update(dt) {
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) ship.x -= SHIP_SPEED * dt;
+  if (keys['ArrowRight'] || keys['d'] || keys['D']) ship.x += SHIP_SPEED * dt;
+  ship.x = Engine.clamp(ship.x, ship.w/2, W - ship.w/2);
+
+  fireT -= dt;
+  if ((keys[' '] || autoFire) && fireT <= 0) { fire(); fireT = FIRE_COOLDOWN; }
+
+  bullets.forEach(b => b.y += b.vy * dt);
+  bullets = bullets.filter(b => b.y > -20);
+
+  spawnT += dt;
+  if (spawnT > spawnInterval) {
+    spawnT = 0;
+    spawnRock();
+    spawnInterval = Math.max(0.35, spawnInterval - 0.01);
+  }
+
+  rocks.forEach(r => { r.y += r.vy * dt; r.x += r.vx * dt; });
+
+  // зіткнення куль з астероїдами
+  for (const rock of rocks) {
+    for (const b of bullets) {
+      if (!b.dead && Math.hypot(b.x-rock.x, b.y-rock.y) < rock.r) {
+        b.dead = true;
+        rock.dead = true;
+        score += Math.round(20 - rock.r/2);
+        document.getElementById('score').textContent = 'РАХУНОК: ' + score;
+        sound.eat();
+        particles.burst(rock.x, rock.y, '#5fd0c2', 12, {speed: 3, life: 20});
+      }
+    }
+  }
+  bullets = bullets.filter(b => !b.dead);
+
+  // зіткнення астероїдів з кораблем
+  for (const rock of rocks) {
+    if (!rock.dead && Math.abs(rock.x-ship.x) < rock.r+ship.w/2 && Math.abs(rock.y-ship.y) < rock.r+ship.h/2) {
+      rock.dead = true;
+      loseLife();
+    }
+  }
+
+  rocks = rocks.filter(r => !r.dead && r.y < H + 40);
+
+  particles.update();
+  shake.update();
+}
+
+function loseLife() {
+  lives--;
+  sound.hit();
+  shake.trigger(7, 10);
+  document.getElementById('lives').textContent = 'ЖИТТЯ: ' + lives;
+  particles.burst(ship.x, ship.y, '#ef6b52', 14, {speed: 3.4, life: 22});
+  if (lives <= 0) gameOver();
+}
+
+function gameOver() {
+  running = false;
+  loop.stop();
+  sound.gameOver();
+  const earned = Math.max(1, Math.floor(score / 8));
+  Engine.CoinBank.add(earned);
+  let best = 0;
+  try { best = Number(localStorage.getItem('spaceshooter_best') || 0); } catch (e) {}
+  if (score > best) { try { localStorage.setItem('spaceshooter_best', score); } catch (e) {} }
+  msgEl.textContent = `КОРАБЕЛЬ ЗНИЩЕНО — РАХУНОК ${score} · +${earned} монет`;
+  document.getElementById('startBtn').textContent = 'Спробувати ще раз';
+}
+
+function render() {
+  ctx.save();
+  ctx.fillStyle = '#0a1830';
+  ctx.fillRect(0, 0, W, H);
+  shake.apply(ctx);
+
+  ctx.fillStyle = 'rgba(244,237,224,0.4)';
+  for (let i = 0; i < 40; i++) {
+    const sx = (i * 53) % W, sy = (i * 97 + performance.now()*0.02) % H;
+    ctx.fillRect(sx, sy, 2, 2);
+  }
+
+  ctx.fillStyle = '#f0a93b';
+  bullets.forEach(b => ctx.fillRect(b.x-2, b.y-8, 4, 10));
+
+  rocks.forEach(r => {
+    ctx.fillStyle = '#8a92b2';
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(0,0,0,0.2)';
+    ctx.beginPath();
+    ctx.arc(r.x - r.r*0.3, r.y - r.r*0.3, r.r*0.4, 0, Math.PI*2);
+    ctx.fill();
+  });
+
+  ctx.save();
+  ctx.translate(ship.x, ship.y);
+  ctx.fillStyle = '#5fd0c2';
+  ctx.beginPath();
+  ctx.moveTo(0, -ship.h/2);
+  ctx.lineTo(ship.w/2, ship.h/2);
+  ctx.lineTo(0, ship.h/3);
+  ctx.lineTo(-ship.w/2, ship.h/2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+
+  particles.draw(ctx);
+  ctx.restore();
+}
+
+function start() {
+  reset();
+  running = true;
+  if (loop) loop.stop();
+  loop = new Engine.Loop(update, render);
+  loop.start();
+  document.getElementById('startBtn').textContent = 'Рестарт';
+}
+
+document.getElementById('startBtn').addEventListener('click', start);
+
+reset();
+render();
+</script>
+</body>
+</html>
