@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Пам'ять — ІГРОТЕКА</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .wrap { max-width: 680px; margin: 0 auto; padding: 32px 20px 60px; text-align: center; }
+  .back {
+    display: inline-block; font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    color: var(--text-dim); margin-bottom: 24px; border: 1px solid var(--line);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  .back:hover { color: var(--magenta); border-color: var(--magenta); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--text); margin: 0 0 6px; }
+  .status-row { display: flex; justify-content: center; gap: 30px; margin: 18px auto 20px; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--yellow); }
+  .board {
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+    max-width: 560px; margin: 0 auto;
+  }
+  .card {
+    aspect-ratio: 1; border-radius: 12px; background: var(--bg-panel-raised);
+    border: 2px solid var(--line); display: flex; align-items: center; justify-content: center;
+    font-size: 34px; cursor: pointer; user-select: none; transition: transform 0.15s ease;
+  }
+  .card.flipped { background: var(--paper); transform: scale(1.04); }
+  .card.matched { background: var(--paper-alt); opacity: 0.55; cursor: default; }
+  .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 18px; min-height: 22px; }
+  .btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
+    background: var(--magenta); border: none; color: var(--paper); border-radius: 10px; cursor: pointer; margin-top: 10px;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .hint { margin-top: 18px; color: var(--text-dim); font-size: 13px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← До полиці</a>
+  <h1 class="crt-flicker">ПАМ'ЯТЬ</h1>
+  <div class="status-row">
+    <span id="moves">СПРОБИ: 0</span>
+    <span id="pairs">ПАРИ: 0 / 8</span>
+  </div>
+  <div class="board" id="board"></div>
+  <div class="overlay-msg" id="msg"></div>
+  <button class="btn" id="startBtn">Нова гра</button>
+  <p class="hint">Клікай по картках, знаходь пари однакових символів. Менше спроб — краще.</p>
+</div>
+
+<script src="../engine.js"></script>
+<script>
+const boardEl = document.getElementById('board');
+const sound = new Engine.SoundFX();
+const particles = new Engine.Particles();
+Engine.mountMuteButton(sound, document.body);
+Engine.mountCoinBadge(document.body, '../');
+
+const ICONS = ['🐸','🍄','🌵','🐙','🍒','⚡','🎈','🧩'];
+
+let cards, flippedIdx, moves, pairsFound, locked;
+
+function shuffle(arr) {
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]];
+  }
+  return arr;
+}
+
+function reset() {
+  const deck = shuffle([...ICONS, ...ICONS].map((icon, i) => ({ icon, id: i, flipped: false, matched: false })));
+  cards = deck;
+  flippedIdx = [];
+  moves = 0;
+  pairsFound = 0;
+  locked = false;
+  document.getElementById('moves').textContent = 'СПРОБИ: 0';
+  document.getElementById('pairs').textContent = 'ПАРИ: 0 / 8';
+  document.getElementById('msg').textContent = '';
+  renderBoard();
+}
+
+function renderBoard() {
+  boardEl.innerHTML = '';
+  cards.forEach((card, i) => {
+    const el = document.createElement('div');
+    el.className = 'card' + (card.flipped ? ' flipped' : '') + (card.matched ? ' matched' : '');
+    el.textContent = (card.flipped || card.matched) ? card.icon : '❔';
+    el.addEventListener('click', () => onCardClick(i));
+    boardEl.appendChild(el);
+  });
+}
+
+function onCardClick(i) {
+  if (locked) return;
+  const card = cards[i];
+  if (card.flipped || card.matched) return;
+
+  card.flipped = true;
+  flippedIdx.push(i);
+  sound.blip();
+  renderBoard();
+
+  if (flippedIdx.length === 2) {
+    locked = true;
+    moves++;
+    document.getElementById('moves').textContent = 'СПРОБИ: ' + moves;
+    const [a, b] = flippedIdx;
+    if (cards[a].icon === cards[b].icon) {
+      cards[a].matched = true;
+      cards[b].matched = true;
+      pairsFound++;
+      document.getElementById('pairs').textContent = `ПАРИ: ${pairsFound} / 8`;
+      sound.coin();
+      setTimeout(() => { flippedIdx = []; locked = false; renderBoard(); checkWin(); }, 320);
+    } else {
+      sound.hit();
+      setTimeout(() => {
+        cards[a].flipped = false;
+        cards[b].flipped = false;
+        flippedIdx = [];
+        locked = false;
+        renderBoard();
+      }, 650);
+    }
+  }
+}
+
+function checkWin() {
+  if (pairsFound === ICONS.length) {
+    sound.win();
+    const earned = Math.max(5, 60 - moves * 2);
+    Engine.CoinBank.add(earned);
+    document.getElementById('msg').textContent = `ВІДМІННО! ЗІБРАНО ЗА ${moves} СПРОБ · +${earned} монет`;
+  }
+}
+
+document.getElementById('startBtn').addEventListener('click', reset);
+
+reset();
+</script>
+</body>
+</html>

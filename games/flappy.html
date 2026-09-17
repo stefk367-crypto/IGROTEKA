@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Літайлик — ІГРОТЕКА</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .wrap { max-width: 620px; margin: 0 auto; padding: 32px 20px 60px; text-align: center; }
+  .back {
+    display: inline-block; font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    color: var(--text-dim); margin-bottom: 24px; border: 1px solid var(--line);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  .back:hover { color: var(--cyan); border-color: var(--cyan); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 30px; color: var(--text); margin: 0 0 6px; }
+  .status-row { display: flex; justify-content: space-between; max-width: 480px; margin: 18px auto 14px; font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--yellow); }
+  #board {
+    background: #102a3a; border: 3px solid var(--line); border-radius: 14px;
+    box-shadow: 0 14px 0 -6px rgba(0,0,0,0.25); max-width: 100%; touch-action: none; cursor: pointer;
+  }
+  .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 14px; min-height: 22px; }
+  .btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
+    background: var(--cyan); border: none; color: #102a3a; border-radius: 10px; cursor: pointer; margin-top: 10px;
+  }
+  .btn:hover { filter: brightness(1.08); }
+  .hint { margin-top: 18px; color: var(--text-dim); font-size: 13px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">← До полиці</a>
+  <h1 class="crt-flicker">ЛІТАЙЛИК</h1>
+  <div class="status-row">
+    <span id="score">РАХУНОК: 0</span>
+    <span id="best">РЕКОРД: 0</span>
+  </div>
+  <canvas id="board" width="480" height="600"></canvas>
+  <div class="overlay-msg" id="msg"></div>
+  <button class="btn" id="startBtn">Старт</button>
+  <p class="hint">Клік / пробіл / тап — підліт. Пролітай крізь проміжки між трубами, не торкаючись їх.</p>
+</div>
+
+<script src="../engine.js"></script>
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+
+const sound = new Engine.SoundFX();
+const particles = new Engine.Particles();
+const shake = new Engine.ScreenShake();
+Engine.mountMuteButton(sound, document.body);
+Engine.mountCoinBadge(document.body, '../');
+
+const GRAVITY = 1400, FLAP = -420, PIPE_GAP = 190, PIPE_W = 78, PIPE_SPEED = 200, PIPE_INTERVAL = 1.3;
+
+let bird, pipes, score, best, running, loop, spawnT, msgEl;
+msgEl = document.getElementById('msg');
+best = 0;
+try { best = Number(localStorage.getItem('flappy_best') || 0); } catch(e) {}
+document.getElementById('best').textContent = 'РЕКОРД: ' + best;
+
+function reset() {
+  bird = { x: W*0.28, y: H/2, vy: 0, r: 16, rot: 0 };
+  pipes = [];
+  score = 0;
+  spawnT = 0;
+  document.getElementById('score').textContent = 'РАХУНОК: 0';
+  msgEl.textContent = '';
+}
+
+function flap() {
+  if (!running) return;
+  bird.vy = FLAP;
+  sound.jump();
+  particles.burst(bird.x-10, bird.y+10, '#5fd0c2', 5, {speed:1.2, life:12, gravity:0.02});
+}
+
+window.addEventListener('keydown', e => {
+  if (e.key === ' ' || e.key === 'ArrowUp') { flap(); e.preventDefault(); }
+});
+canvas.addEventListener('pointerdown', flap);
+
+function spawnPipe() {
+  const margin = 70;
+  const gapY = margin + Math.random() * (H - margin*2 - PIPE_GAP);
+  pipes.push({ x: W + PIPE_W, gapY, passed: false });
+}
+
+function update(dt) {
+  bird.vy += GRAVITY * dt;
+  bird.y += bird.vy * dt;
+  bird.rot = Engine.clamp(bird.vy / 500, -0.6, 1.1);
+
+  if (bird.y - bird.r < 0) { bird.y = bird.r; bird.vy = 0; }
+  if (bird.y + bird.r > H) { crash(); return; }
+
+  spawnT += dt;
+  if (spawnT > PIPE_INTERVAL) { spawnT = 0; spawnPipe(); }
+
+  pipes.forEach(p => { p.x -= PIPE_SPEED * dt; });
+  pipes = pipes.filter(p => p.x > -PIPE_W);
+
+  for (const p of pipes) {
+    if (!p.passed && p.x + PIPE_W < bird.x) {
+      p.passed = true;
+      score++;
+      document.getElementById('score').textContent = 'РАХУНОК: ' + score;
+      sound.coin();
+    }
+    const withinX = bird.x + bird.r > p.x && bird.x - bird.r < p.x + PIPE_W;
+    const withinGap = bird.y - bird.r > p.gapY && bird.y + bird.r < p.gapY + PIPE_GAP;
+    if (withinX && !withinGap) { crash(); return; }
+  }
+
+  particles.update();
+  shake.update();
+}
+
+function crash() {
+  running = false;
+  loop.stop();
+  sound.hit();
+  sound.gameOver();
+  shake.trigger(8, 12);
+  if (score > best) {
+    best = score;
+    try { localStorage.setItem('flappy_best', best); } catch(e) {}
+    document.getElementById('best').textContent = 'РЕКОРД: ' + best;
+  }
+  const earned = Math.max(1, score * 2);
+  Engine.CoinBank.add(earned);
+  msgEl.textContent = `РОЗБИВСЯ — РАХУНОК ${score} · +${earned} монет`;
+  document.getElementById('startBtn').textContent = 'Спробувати ще раз';
+  render();
+}
+
+function render() {
+  ctx.save();
+  ctx.fillStyle = '#102a3a';
+  ctx.fillRect(0, 0, W, H);
+  shake.apply(ctx);
+
+  pipes.forEach(p => {
+    ctx.fillStyle = '#5fd0c2';
+    ctx.fillRect(p.x, 0, PIPE_W, p.gapY);
+    ctx.fillRect(p.x, p.gapY + PIPE_GAP, PIPE_W, H - (p.gapY+PIPE_GAP));
+    ctx.fillStyle = '#41b0a3';
+    ctx.fillRect(p.x-4, p.gapY-14, PIPE_W+8, 14);
+    ctx.fillRect(p.x-4, p.gapY+PIPE_GAP, PIPE_W+8, 14);
+  });
+
+  ctx.save();
+  ctx.translate(bird.x, bird.y);
+  ctx.rotate(bird.rot);
+  ctx.fillStyle = '#f0a93b';
+  ctx.beginPath();
+  ctx.arc(0, 0, bird.r, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#102a3a';
+  ctx.beginPath();
+  ctx.arc(6, -4, 3, 0, Math.PI*2);
+  ctx.fill();
+  ctx.fillStyle = '#ef6b52';
+  ctx.beginPath();
+  ctx.moveTo(bird.r-2, 0); ctx.lineTo(bird.r+10, -4); ctx.lineTo(bird.r+10, 4);
+  ctx.fill();
+  ctx.restore();
+
+  particles.draw(ctx);
+  ctx.restore();
+}
+
+function start() {
+  reset();
+  running = true;
+  if (loop) loop.stop();
+  loop = new Engine.Loop(update, render);
+  loop.start();
+  document.getElementById('startBtn').textContent = 'Рестарт';
+}
+
+document.getElementById('startBtn').addEventListener('click', start);
+
+reset();
+render();
+</script>
+</body>
+</html>

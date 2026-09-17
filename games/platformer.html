@@ -1,0 +1,419 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Стрибун — КОІНЗАЛ</title>
+<link rel="stylesheet" href="../style.css">
+<style>
+  .wrap {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 32px 20px 60px;
+    text-align: center;
+  }
+  .back {
+    display: inline-block;
+    font-family: var(--font-display);
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-bottom: 24px;
+    border: 1px solid var(--line);
+    padding: 8px 12px;
+    border-radius: 3px;
+  }
+  .back:hover { color: var(--yellow); border-color: var(--yellow); }
+
+  h1 {
+    font-family: var(--font-display);
+    font-size: 24px;
+    color: var(--yellow);
+    text-shadow: 0 0 8px var(--yellow), 2px 2px 0 var(--magenta);
+    margin: 0 0 6px;
+  }
+
+  .status-row {
+    display: flex;
+    justify-content: space-between;
+    max-width: 720px;
+    margin: 18px auto 14px;
+    font-family: var(--font-display);
+    font-size: 12px;
+  }
+  .status-row span { color: var(--yellow); }
+
+  #board {
+    background: #102725;
+    border: 3px solid var(--line);
+    border-radius: 6px;
+    box-shadow: 0 0 30px -6px var(--yellow);
+    max-width: 100%;
+  }
+
+  .overlay-msg {
+    font-family: var(--font-display);
+    font-size: 14px;
+    color: var(--magenta);
+    margin-top: 14px;
+    min-height: 20px;
+  }
+
+  .btn {
+    font-family: var(--font-display);
+    font-size: 11px;
+    padding: 10px 16px;
+    background: transparent;
+    border: 2px solid var(--yellow);
+    color: var(--yellow);
+    border-radius: 3px;
+    cursor: pointer;
+    margin-top: 10px;
+  }
+  .btn:hover { background: var(--yellow); color: #102725; }
+
+  .hint {
+    margin-top: 18px;
+    color: var(--text-dim);
+    font-size: 12.5px;
+    line-height: 1.7;
+  }
+
+  .touch-controls {
+    display: none;
+    justify-content: center;
+    gap: 14px;
+    margin-top: 22px;
+  }
+  .touch-controls button {
+    font-family: var(--font-display);
+    background: var(--bg-panel-raised);
+    border: 1px solid var(--line);
+    color: var(--yellow);
+    border-radius: 8px;
+    font-size: 16px;
+    width: 64px;
+    height: 56px;
+  }
+  @media (hover: none) and (pointer: coarse) {
+    .touch-controls { display: flex; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="../index.html">◂ ДО ЗАЛИ</a>
+  <h1 class="crt-flicker">СТРИБУН</h1>
+  <div class="status-row">
+    <span id="coins">МОНЕТИ: 0 / 0</span>
+    <span id="lives">ЖИТТЯ: 3</span>
+  </div>
+  <canvas id="board" width="800" height="420"></canvas>
+  <div class="overlay-msg" id="msg"></div>
+  <button class="btn" id="startBtn">▸ СТАРТ</button>
+
+  <div class="touch-controls" id="touch">
+    <button data-a="left">◂</button>
+    <button data-a="jump">▲ СТРИБОК</button>
+    <button data-a="right">▸</button>
+  </div>
+
+  <p class="hint">Керування: ◂ ▸ або A D — рух, пробіл або W — стрибок (утримуй довше — вищий стрибок). Збери всі монети, уникай падіння в прірву.</p>
+</div>
+
+<script src="../engine.js"></script>
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+const W = canvas.width, H = canvas.height;
+const GROUND_Y = H - 40;
+
+const sound = new Engine.SoundFX();
+const particles = new Engine.Particles();
+const shake = new Engine.ScreenShake();
+Engine.mountMuteButton(sound, document.body);
+
+// --- Фізичні константи в px/с (справжня акселерація/тертя, coyote time, jump buffer) ---
+const MOVE_ACCEL = 2000;    // px/с² — пришвидшення при натисканні
+const FRICTION = 1800;      // px/с² — гальмування коли відпустив
+const MAX_SPEED = 220;      // px/с
+const GRAVITY = 1980;       // px/с²
+const MAX_FALL = 900;       // px/с — гранична швидкість падіння
+const JUMP_VELOCITY = -690; // px/с
+const JUMP_CUTOFF = 0.45;   // якщо відпустив стрибок рано — обрізає імпульс вгору
+const COYOTE_TIME = 0.09;   // секунд можна стрибнути вже зійшовши з платформи
+const JUMP_BUFFER = 0.12;   // секунд стрибок "запам'ятовується" до приземлення
+
+let platforms, coins, player, keys, running, lives, collected, camX, loop, particlesLayer, bgOffset;
+
+function levelData() {
+  return {
+    platforms: [
+      {x:0, y:GROUND_Y, w:260, h:40},
+      {x:330, y:GROUND_Y, w:180, h:40},
+      {x:560, y:GROUND_Y, w:200, h:40},
+      {x:820, y:GROUND_Y, w:260, h:40},
+      {x:420, y:300, w:100, h:16},
+      {x:600, y:230, w:100, h:16},
+      {x:780, y:300, w:90, h:16},
+      {x:960, y:250, w:120, h:16},
+      {x:1140, y:GROUND_Y, w:300, h:40},
+      {x:1200, y:320, w:100, h:16},
+      {x:1400, y:GROUND_Y, w:400, h:40},
+    ],
+    coinPos: [
+      {x:120,y:GROUND_Y-40},{x:400,y:GROUND_Y-40},{x:470,y:260},
+      {x:650,y:190},{x:830,y:260},{x:1010,y:210},
+      {x:1200,y:GROUND_Y-40},{x:1250,y:280},{x:1500,y:GROUND_Y-40},{x:1600,y:GROUND_Y-40}
+    ]
+  };
+}
+
+function reset() {
+  const lvl = levelData();
+  platforms = lvl.platforms;
+  coins = lvl.coinPos.map(c => ({...c, taken: false, r: 9, bob: Math.random()*Math.PI*2}));
+  player = {
+    x: 40, y: GROUND_Y-80, w: 26, h: 34, vx: 0, vy: 0,
+    onGround: false, facing: 1,
+    coyote: 0, jumpBuffer: 0, holdingJump: false, squash: 1
+  };
+  lives = 3;
+  collected = 0;
+  camX = 0;
+  bgOffset = 0;
+  document.getElementById('coins').textContent = `МОНЕТИ: 0 / ${coins.length}`;
+  document.getElementById('lives').textContent = 'ЖИТТЯ: ' + lives;
+  document.getElementById('msg').textContent = '';
+}
+
+keys = {};
+window.addEventListener('keydown', e => {
+  keys[e.key] = true;
+  if ([' ','ArrowUp','ArrowLeft','ArrowRight','w','a','d','W','A','D'].includes(e.key)) e.preventDefault();
+});
+window.addEventListener('keyup', e => keys[e.key] = false);
+
+document.getElementById('touch').addEventListener('pointerdown', e => {
+  const a = e.target.dataset.a;
+  if (a === 'left') keys['ArrowLeft'] = true;
+  if (a === 'right') keys['ArrowRight'] = true;
+  if (a === 'jump') keys[' '] = true;
+});
+document.getElementById('touch').addEventListener('pointerup', e => {
+  const a = e.target.dataset.a;
+  if (a === 'left') keys['ArrowLeft'] = false;
+  if (a === 'right') keys['ArrowRight'] = false;
+  if (a === 'jump') keys[' '] = false;
+});
+
+function rectsOverlap(a, b) {
+  return a.x < b.x+b.w && a.x+a.w > b.x && a.y < b.y+b.h && a.y+a.h > b.y;
+}
+
+function wantJump() {
+  return keys[' '] || keys['ArrowUp'] || keys['w'] || keys['W'];
+}
+function wantLeft() {
+  return keys['ArrowLeft'] || keys['a'] || keys['A'];
+}
+function wantRight() {
+  return keys['ArrowRight'] || keys['d'] || keys['D'];
+}
+
+function update(dt) {
+  const jumpHeld = wantJump();
+
+  // --- Горизонтальний рух: акселерація + тертя, а не миттєва швидкість ---
+  if (wantLeft()) {
+    player.vx -= MOVE_ACCEL * dt;
+    player.facing = -1;
+  } else if (wantRight()) {
+    player.vx += MOVE_ACCEL * dt;
+    player.facing = 1;
+  } else {
+    const f = FRICTION * dt;
+    if (player.vx > 0) player.vx = Math.max(0, player.vx - f);
+    else if (player.vx < 0) player.vx = Math.min(0, player.vx + f);
+  }
+  player.vx = Engine.clamp(player.vx, -MAX_SPEED, MAX_SPEED);
+
+  // --- Coyote time + jump buffer, для "чесного" відчуття стрибка ---
+  player.coyote -= dt;
+  player.jumpBuffer -= dt;
+  if (jumpHeld && !player.holdingJump) player.jumpBuffer = JUMP_BUFFER;
+  player.holdingJump = jumpHeld;
+
+  if (player.jumpBuffer > 0 && (player.onGround || player.coyote > 0)) {
+    player.vy = JUMP_VELOCITY;
+    player.onGround = false;
+    player.coyote = 0;
+    player.jumpBuffer = 0;
+    player.squash = 1.35;
+    sound.jump();
+    particles.burst(player.x+player.w/2, player.y+player.h, '#ffe94d', 6, {speed:1.6, life:14, gravity:0.05, size:3});
+  }
+
+  // варіативна висота стрибка: раннє відпускання ▲ обрізає імпульс
+  if (!jumpHeld && player.vy < 0) {
+    player.vy *= (1 - JUMP_CUTOFF * dt * 8);
+  }
+
+  player.vy += GRAVITY * dt;
+  player.vy = Math.min(player.vy, MAX_FALL);
+
+  player.x += player.vx * dt;
+  player.y += player.vy * dt;
+
+  const wasOnGround = player.onGround;
+  player.onGround = false;
+
+  for (const p of platforms) {
+    const feet = { x: player.x+4, y: player.y+player.h-6, w: player.w-8, h: 10 };
+    if (rectsOverlap(feet, p) && player.vy >= 0) {
+      if (!wasOnGround) {
+        particles.burst(player.x+player.w/2, p.y, '#8a92b2', 6, {speed:1.4, life:12, gravity:0.05, size:3, spread:Math.PI});
+        if (player.vy > 300) { sound.land(); shake.trigger(2, 4); }
+      }
+      player.y = p.y - player.h;
+      player.vy = 0;
+      player.onGround = true;
+      player.coyote = COYOTE_TIME;
+    }
+  }
+
+  player.squash = Engine.lerp(player.squash, 1, 0.2);
+
+  if (player.x < camX) player.x = camX;
+
+  coins.forEach(c => {
+    c.bob += dt * 3;
+    if (!c.taken) {
+      const d = Math.hypot((player.x+player.w/2)-c.x, (player.y+player.h/2)-c.y);
+      if (d < 24) {
+        c.taken = true;
+        collected++;
+        document.getElementById('coins').textContent = `МОНЕТИ: ${collected} / ${coins.length}`;
+        sound.coin();
+        particles.burst(c.x, c.y, '#ffe94d', 10, {speed: 3, life: 22});
+      }
+    }
+  });
+
+  if (player.y > H + 60) loseLife();
+  if (collected === coins.length) winGame();
+
+  const targetCam = player.x - W/2 + player.w/2;
+  camX += (Math.max(0, targetCam) - camX) * 0.12;
+  bgOffset = camX * 0.35;
+
+  particles.update();
+  shake.update();
+}
+
+function loseLife() {
+  lives--;
+  sound.hit();
+  shake.trigger(6, 10);
+  document.getElementById('lives').textContent = 'ЖИТТЯ: ' + lives;
+  if (lives <= 0) {
+    gameOver();
+  } else {
+    player.x = Math.max(40, camX + 40);
+    player.y = GROUND_Y - 80;
+    player.vx = 0; player.vy = 0;
+  }
+}
+
+function winGame() {
+  running = false;
+  loop.stop();
+  sound.win();
+  document.getElementById('msg').textContent = 'ПЕРЕМОГА! УСІ МОНЕТИ ЗІБРАНО';
+  document.getElementById('startBtn').textContent = '▸ ЗІГРАТИ ЩЕ РАЗ';
+}
+
+function gameOver() {
+  running = false;
+  loop.stop();
+  sound.gameOver();
+  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — ЖИТТЯ СКІНЧИЛИСЬ';
+  document.getElementById('startBtn').textContent = '▸ СПРОБУВАТИ ЩЕ РАЗ';
+}
+
+function render() {
+  ctx.save();
+  ctx.fillStyle = '#102725';
+  ctx.fillRect(0, 0, W, H);
+  shake.apply(ctx);
+
+  // паралакс-зорі на фоні
+  ctx.fillStyle = 'rgba(138,146,178,0.35)';
+  for (let i = 0; i < 60; i++) {
+    const sx = (i * 137 - bgOffset * 0.5) % (W + 200) - 100;
+    const sy = (i * 71) % H;
+    ctx.fillRect(((sx % W) + W) % W, sy, 2, 2);
+  }
+
+  ctx.save();
+  ctx.translate(-camX, 0);
+
+  ctx.strokeStyle = 'rgba(42,51,82,0.25)';
+  for (let i=0;i<3000;i+=40){ ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i,H); ctx.stroke(); }
+
+  platforms.forEach(p => {
+    ctx.fillStyle = '#1a2238';
+    ctx.fillRect(p.x, p.y, p.w, p.h);
+    ctx.fillStyle = '#ffe94d';
+    ctx.fillRect(p.x, p.y, p.w, 4);
+  });
+
+  coins.forEach(c => {
+    if (c.taken) return;
+    const bob = Math.sin(c.bob) * 3;
+    ctx.fillStyle = '#ffe94d';
+    ctx.shadowColor = '#ffe94d';
+    ctx.shadowBlur = 10;
+    ctx.beginPath();
+    ctx.arc(c.x, c.y + bob, c.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+  });
+
+  particles.draw(ctx);
+
+  ctx.save();
+  const sx = 1 / Math.sqrt(player.squash);
+  const cx = player.x + player.w/2, cy = player.y + player.h;
+  ctx.translate(cx, cy);
+  ctx.scale(sx, player.squash);
+  ctx.translate(-cx, -cy);
+  ctx.fillStyle = '#ff2fd6';
+  ctx.shadowColor = '#ff2fd6';
+  ctx.shadowBlur = 8;
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = '#102725';
+  const eyeX = player.facing === 1 ? player.x + player.w - 8 : player.x + 4;
+  ctx.fillRect(eyeX, player.y+8, 4, 4);
+  ctx.restore();
+
+  ctx.restore();
+  ctx.restore();
+}
+
+function start() {
+  reset();
+  running = true;
+  document.getElementById('startBtn').textContent = '▸ РЕСТАРТ';
+  if (loop) loop.stop();
+  loop = new Engine.Loop(update, render);
+  loop.start();
+}
+
+document.getElementById('startBtn').addEventListener('click', start);
+
+reset();
+render();
+</script>
+</body>
+</html>
