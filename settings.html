@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Налаштування — ІГРОТЕКА</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wrap { max-width: 640px; margin: 0 auto; padding: 32px 20px 70px; }
+  .back {
+    display: inline-block; font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    color: var(--text-dim); margin-bottom: 24px; border: 1px solid var(--line);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  .back:hover { color: var(--yellow); border-color: var(--yellow); }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--text); margin: 0 0 28px; text-align: center; }
+
+  .panel {
+    background: var(--paper); border-radius: 16px; padding: 22px 24px; margin-bottom: 20px;
+    box-shadow: 0 10px 0 -4px rgba(0,0,0,0.18), 0 14px 24px -10px rgba(0,0,0,0.4);
+  }
+  .panel h2 { font-family: var(--font-display); font-weight: 700; font-size: 16px; color: var(--ink); margin: 0 0 14px; }
+
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 14px; margin-bottom: 12px; }
+  .row:last-child { margin-bottom: 0; }
+  .row-label { font-size: 13.5px; color: #4a4038; }
+
+  input[type=range] { width: 160px; accent-color: #ef6b52; }
+
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
+  .stat-box { background: var(--paper-alt); border-radius: 10px; padding: 12px; text-align: center; }
+  .stat-box .num { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--ink); }
+  .stat-box .lbl { font-size: 10.5px; color: #7a6b52; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 3px; }
+
+  .danger-btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 12.5px; padding: 10px 16px;
+    background: #e2503a; color: #fbf0ea; border: none; border-radius: 8px; cursor: pointer;
+  }
+  .danger-btn:hover { filter: brightness(1.08); }
+
+  .toast {
+    position: fixed; bottom: 26px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: var(--bg-panel-raised); border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 20px; font-family: var(--font-display); font-weight: 700; font-size: 13px;
+    color: var(--text); opacity: 0; transition: all 0.25s ease; pointer-events: none;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← До полиці</a>
+  <h1>Налаштування</h1>
+
+  <div class="panel">
+    <h2>Звук</h2>
+    <div class="row">
+      <span class="row-label">Гучність ефектів</span>
+      <input type="range" id="volume" min="0" max="100" value="80">
+    </div>
+    <div class="row">
+      <span class="row-label">Повністю вимкнути звук</span>
+      <input type="checkbox" id="muted">
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Статистика</h2>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="num" id="statCoins">0</div><div class="lbl">Монет зараз</div></div>
+      <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl">Зароблено всього</div></div>
+      <div class="stat-box"><div class="num" id="statStreak">0</div><div class="lbl">Днів поспіль</div></div>
+      <div class="stat-box"><div class="num" id="statAch">0/9</div><div class="lbl">Досягнень</div></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>Скинути прогрес</h2>
+    <p class="row-label" style="margin-bottom:14px;">Обнулить монети, теми, рекорди й серію днів. Це незворотно.</p>
+    <button class="danger-btn" id="resetBtn">Скинути весь прогрес</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script src="engine.js"></script>
+<script>
+const sound = new Engine.SoundFX();
+const toastEl = document.getElementById('toast');
+
+function toast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('show');
+  clearTimeout(toastEl._t);
+  toastEl._t = setTimeout(() => toastEl.classList.remove('show'), 2000);
+}
+
+const volumeEl = document.getElementById('volume');
+const mutedEl = document.getElementById('muted');
+volumeEl.value = Math.round(sound.volume * 100);
+mutedEl.checked = sound.muted;
+
+volumeEl.addEventListener('input', () => {
+  sound.setVolume(volumeEl.value / 100);
+});
+volumeEl.addEventListener('change', () => sound.blip());
+mutedEl.addEventListener('change', () => {
+  sound.muted = mutedEl.checked;
+  try { localStorage.setItem('koinzal_muted', sound.muted ? '1' : '0'); } catch(e) {}
+});
+
+function refreshStats() {
+  document.getElementById('statCoins').textContent = Engine.CoinBank.get();
+  document.getElementById('statTotal').textContent = Engine.CoinBank.getTotalEarned();
+  document.getElementById('statStreak').textContent = Engine.DailyBonus.getStreak();
+  document.getElementById('statAch').textContent = Engine.Achievements.unlocked().length + '/' + Engine.Achievements.all().length;
+}
+refreshStats();
+
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (!confirm('Точно скинути весь прогрес? Це незворотно.')) return;
+  const keys = [
+    'koinzal_coins','koinzal_total_earned','koinzal_theme','koinzal_owned_themes',
+    'koinzal_daily_date','koinzal_daily_streak','koinzal_muted','koinzal_volume',
+    'snake_best','flappy_best','simon_best','2048_best'
+  ];
+  keys.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+  toast('Прогрес скинуто');
+  setTimeout(() => location.reload(), 900);
+});
+</script>
+</body>
+</html>
