@@ -190,6 +190,49 @@
     font-size: 13px;
     margin-top: 10px;
   }
+
+  .splash-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(8, 18, 17, 0.82);
+    display: flex; align-items: center; justify-content: center;
+    padding: 20px;
+    opacity: 1; transition: opacity 0.25s ease;
+  }
+  .splash-overlay.closing { opacity: 0; }
+  .splash-box {
+    background: var(--paper); border-radius: 20px; padding: 40px 36px;
+    max-width: 420px; width: 100%; text-align: center;
+    box-shadow: 0 20px 0 -8px rgba(0,0,0,0.25), 0 30px 50px -20px rgba(0,0,0,0.5);
+  }
+  .splash-title {
+    font-family: var(--font-display); font-weight: 800; font-size: 32px;
+    color: var(--ink); margin: 0 0 4px; letter-spacing: 0.02em;
+  }
+  .splash-edition {
+    font-family: var(--font-display); font-weight: 700; font-size: 13px;
+    color: var(--magenta); letter-spacing: 0.12em; margin-bottom: 24px;
+  }
+  .splash-credits { margin-bottom: 26px; }
+  .splash-credits > div {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 0; border-top: 1px solid rgba(31,58,55,0.12);
+  }
+  .splash-credits > div:first-child { border-top: none; }
+  .splash-role { font-size: 12.5px; color: #7a6b52; }
+  .splash-name {
+    font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--ink);
+  }
+  .splash-checkbox {
+    display: flex; align-items: center; justify-content: center; gap: 8px;
+    font-size: 12.5px; color: #7a6b52; margin-bottom: 22px; cursor: pointer; user-select: none;
+  }
+  .splash-checkbox input { accent-color: #ef6b52; width: 16px; height: 16px; }
+  .splash-btn {
+    width: 100%; font-family: var(--font-display); font-weight: 700; font-size: 14px;
+    padding: 13px; border-radius: 12px; border: none; cursor: pointer;
+    background: #1f3a37; color: var(--paper);
+  }
+  .splash-btn:hover { filter: brightness(1.1); }
 </style>
 </head>
 <body>
@@ -459,6 +502,22 @@
   </footer>
 </div>
 
+<div class="splash-overlay" id="splashOverlay">
+  <div class="splash-box">
+    <h2 class="splash-title">ІГРОТЕКА</h2>
+    <div class="splash-edition">DEFINITIVE EDITION</div>
+    <div class="splash-credits">
+      <div><span class="splash-role">Ідея та концепція</span><span class="splash-name">REVO1</span></div>
+      <div><span class="splash-role">Код сайту та ігри</span><span class="splash-name">ROS FAREK</span></div>
+    </div>
+    <label class="splash-checkbox">
+      <input type="checkbox" id="splashDontShow">
+      <span>Більше не показувати</span>
+    </label>
+    <button class="splash-btn" id="splashCloseBtn">Грати</button>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="config.js"></script>
 <script src="supabase-sync.js"></script>
@@ -486,6 +545,29 @@ mountAuthWidget(document.getElementById('dailyBanner').parentElement);
     }
   }
   paint();
+})();
+
+(function() {
+  const overlay = document.getElementById('splashOverlay');
+  const dontShow = document.getElementById('splashDontShow');
+  const closeBtn = document.getElementById('splashCloseBtn');
+  let seen = false;
+  try { seen = localStorage.getItem('koinzal_splash_seen') === '1'; } catch (e) {}
+
+  if (seen) {
+    overlay.style.display = 'none';
+  } else {
+    document.body.style.overflow = 'hidden';
+  }
+
+  closeBtn.addEventListener('click', () => {
+    if (dontShow.checked) {
+      try { localStorage.setItem('koinzal_splash_seen', '1'); } catch (e) {}
+    }
+    overlay.classList.add('closing');
+    document.body.style.overflow = '';
+    setTimeout(() => { overlay.style.display = 'none'; }, 250);
+  });
 })();
 </script>
 </body>
