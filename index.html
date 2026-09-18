@@ -40,32 +40,13 @@
   }
 
   .edition-tag {
-    display: inline-block;
-    margin-top: 10px;
+    display: block;
+    margin-top: 8px;
     font-family: var(--font-display);
     font-weight: 700;
-    font-size: clamp(11px, 1.6vw, 14px);
+    font-size: clamp(13px, 2vw, 18px);
     letter-spacing: 0.28em;
-    padding: 7px 18px;
-    border-radius: 999px;
-    color: var(--bg);
-    background: linear-gradient(100deg, var(--cyan), var(--yellow), var(--magenta), var(--cyan));
-    background-size: 300% 100%;
-    opacity: 0;
-    transform: translateY(14px) scale(0.92);
-    animation:
-      edition-in 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.35s forwards,
-      edition-shimmer 5s linear 1.05s infinite;
-    box-shadow: 0 0 0 0 rgba(240,169,59,0);
-  }
-  @keyframes edition-in {
-    0%   { opacity: 0; transform: translateY(14px) scale(0.92); }
-    60%  { opacity: 1; transform: translateY(-3px) scale(1.04); }
-    100% { opacity: 1; transform: translateY(0) scale(1); box-shadow: 0 0 22px -4px var(--yellow); }
-  }
-  @keyframes edition-shimmer {
-    0%   { background-position: 0% 50%; }
-    100% { background-position: 300% 50%; }
+    color: var(--text);
   }
 
   .swash {
@@ -269,7 +250,7 @@
   <header>
     <div class="eyebrow">Шість коробок · нуль завантажень</div>
     <h1 class="crt-flicker">ІГРОТЕКА</h1>
-    <div class="edition-tag">COMPLETED EDITION</div>
+    <div class="edition-tag crt-flicker">COMPLETED EDITION</div>
     <svg class="swash" viewBox="0 0 220 18" fill="none">
       <path d="M4 10 C 40 2, 80 16, 120 8 S 200 2, 216 10" stroke="#f0a93b" stroke-width="4" stroke-linecap="round"/>
     </svg>
