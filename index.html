@@ -222,15 +222,13 @@
     font-family: var(--font-display); font-weight: 700; font-size: 13px;
     color: var(--magenta); letter-spacing: 0.12em; margin-bottom: 24px;
   }
-  .splash-credits { margin-bottom: 26px; }
-  .splash-credits > div {
-    display: flex; justify-content: space-between; align-items: center;
-    padding: 10px 0; border-top: 1px solid rgba(31,58,55,0.12);
-  }
-  .splash-credits > div:first-child { border-top: none; }
-  .splash-role { font-size: 12.5px; color: #7a6b52; }
-  .splash-name {
-    font-family: var(--font-display); font-weight: 700; font-size: 14px; color: var(--ink);
+  .splash-by {
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 13px;
+    color: #7a6b52;
+    letter-spacing: 0.08em;
+    margin-bottom: 26px;
   }
   .splash-checkbox {
     display: flex; align-items: center; justify-content: center; gap: 8px;
@@ -517,10 +515,7 @@
   <div class="splash-box">
     <h2 class="splash-title">ІГРОТЕКА</h2>
     <div class="splash-edition">COMPLETED EDITION</div>
-    <div class="splash-credits">
-      <div><span class="splash-role">Ідея та концепція</span><span class="splash-name">REVO1</span></div>
-      <div><span class="splash-role">Код сайту та ігри</span><span class="splash-name">ROS FAREK</span></div>
-    </div>
+    <div class="splash-by">by REVO1</div>
     <label class="splash-checkbox">
       <input type="checkbox" id="splashDontShow">
       <span>Більше не показувати</span>
