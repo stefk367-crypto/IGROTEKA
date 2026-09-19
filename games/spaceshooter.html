@@ -65,6 +65,7 @@ const sound = new Engine.SoundFX();
 const particles = new Engine.Particles();
 const shake = new Engine.ScreenShake();
 Engine.mountMuteButton(sound, document.body);
+Engine.mountFullscreenButton(document.body);
 Engine.mountCoinBadge(document.body, '../');
 
 const SHIP_SPEED = 340, BULLET_SPEED = 520, FIRE_COOLDOWN = 0.22;

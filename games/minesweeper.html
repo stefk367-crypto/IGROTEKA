@@ -58,6 +58,7 @@
 const boardEl = document.getElementById('board');
 const sound = new Engine.SoundFX();
 Engine.mountMuteButton(sound, document.body);
+Engine.mountFullscreenButton(document.body);
 Engine.mountCoinBadge(document.body, '../');
 
 const ROWS = 10, COLS = 10, MINES = 12;

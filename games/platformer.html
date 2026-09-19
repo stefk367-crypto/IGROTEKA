@@ -131,6 +131,7 @@ const sound = new Engine.SoundFX();
 const particles = new Engine.Particles();
 const shake = new Engine.ScreenShake();
 Engine.mountMuteButton(sound, document.body);
+Engine.mountFullscreenButton(document.body);
 
 // --- Фізичні константи в px/с (справжня акселерація/тертя, coyote time, jump buffer) ---
 const MOVE_ACCEL = 2000;    // px/с² — пришвидшення при натисканні

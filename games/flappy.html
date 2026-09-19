@@ -52,6 +52,7 @@ const sound = new Engine.SoundFX();
 const particles = new Engine.Particles();
 const shake = new Engine.ScreenShake();
 Engine.mountMuteButton(sound, document.body);
+Engine.mountFullscreenButton(document.body);
 Engine.mountCoinBadge(document.body, '../');
 
 const GRAVITY = 950, FLAP = -380, PIPE_GAP = 190, PIPE_W = 78, PIPE_SPEED = 200, PIPE_INTERVAL = 1.3, MAX_FALL_SPEED = 520;

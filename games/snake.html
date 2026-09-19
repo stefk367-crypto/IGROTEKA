@@ -132,6 +132,7 @@ const sound = new Engine.SoundFX();
 const particles = new Engine.Particles();
 const shake = new Engine.ScreenShake();
 Engine.mountMuteButton(sound, document.body);
+Engine.mountFullscreenButton(document.body);
 
 let snake, prevSnake, dir, nextDir, food, foodPulse, score, best, paused, tickAcc, tickMs, loop;
 
