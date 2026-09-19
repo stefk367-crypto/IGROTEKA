@@ -47,6 +47,13 @@
   }
   .level-info .open-hint { margin-top: 10px; font-size: 12px; color: #8a8069; font-style: italic; }
 
+  .ring-frame {
+    position: absolute; inset: -9px; border-radius: 50%; z-index: 0;
+    -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #fff calc(100% - 9px));
+            mask: radial-gradient(farthest-side, transparent calc(100% - 9px), #fff calc(100% - 9px));
+  }
+  .ring-wrap svg, .ring-label { position: relative; z-index: 1; }
+
   .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
   .stat-box { background: var(--paper-alt); border-radius: 12px; padding: 14px 16px; }
   .stat-box .stat-num { font-family: var(--font-display); font-weight: 800; font-size: 22px; }
@@ -97,6 +104,21 @@
   .level-row .lv-reward { color: #6b6050; }
   .level-row.reached .lv-reward, .level-row.current .lv-reward { color: #4a4636; }
   .beyond-row { margin-top: 4px; text-align: center; font-size: 12px; color: #6b6050; font-style: italic; }
+
+  /* Скіни та немонетні нагороди за рівень */
+  .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
+  .skin-card {
+    background: var(--paper-alt); border-radius: 12px; padding: 12px; text-align: center;
+    border: 2px solid transparent; cursor: pointer; transition: border-color .15s ease, transform .15s ease;
+  }
+  .skin-card:hover { transform: translateY(-2px); }
+  .skin-card.locked { cursor: default; opacity: 0.5; }
+  .skin-card.locked:hover { transform: none; }
+  .skin-card.active { border-color: var(--magenta); }
+  .skin-swatch { width: 44px; height: 44px; border-radius: 50%; margin: 0 auto 8px; border: 2px solid rgba(0,0,0,0.15); }
+  .skin-name { font-family: var(--font-display); font-weight: 700; font-size: 12.5px; }
+  .skin-state { font-size: 11px; color: #6b6050; margin-top: 3px; }
+  .skin-card.active .skin-state { color: var(--magenta); font-weight: 700; }
 </style>
 </head>
 <body>
@@ -109,6 +131,7 @@
 
   <section class="panel level-card" id="levelCard" role="button" tabindex="0">
     <div class="ring-wrap">
+      <div class="ring-frame" id="ringFrame"></div>
       <svg viewBox="0 0 120 120">
         <circle class="ring-track" cx="60" cy="60" r="52"></circle>
         <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"></circle>
@@ -136,6 +159,11 @@
       <div class="modal-list" id="modalList"></div>
     </div>
   </div>
+
+  <section class="panel">
+    <h2 class="section-title">Скіни та нагороди за рівень</h2>
+    <div class="skins-grid" id="skinsGrid"></div>
+  </section>
 
   <section class="panel">
     <h2 class="section-title">Статистика</h2>
@@ -172,6 +200,12 @@ const RECORD_KEYS = [
   { key: 'puzzle15_solved',   name: "П'ятнашки", kind: 'flag' }
 ];
 
+function paintFrame() {
+  const id = Engine.FrameManager.getActive();
+  const frame = Engine.FRAMES[id] || Engine.FRAMES.none;
+  document.getElementById('ringFrame').style.background = frame.css;
+}
+
 (function paintLevel() {
   const p = Engine.LevelManager.getProgress();
   document.getElementById('lvlNum').textContent = p.level;
@@ -181,6 +215,7 @@ const RECORD_KEYS = [
 
   const rank = Engine.LevelManager.getRank(p.level);
   document.getElementById('rankTag').textContent = `${rank.icon} ${rank.name}`;
+  paintFrame();
 
   const ring = document.getElementById('ringFill');
   const r = 52, circ = 2 * Math.PI * r;
@@ -195,6 +230,50 @@ const RECORD_KEYS = [
     document.getElementById('xpSub').textContent = `За наступний рівень — бонус +${reward} монет.`;
   }
 })();
+
+function buildSkinsGrid() {
+  const grid = document.getElementById('skinsGrid');
+  const ownedFrames = Engine.FrameManager.getOwned();
+  const ownedThemes = Engine.ThemeManager.getOwned();
+  const activeFrame = Engine.FrameManager.getActive();
+  const activeTheme = Engine.ThemeManager.getActive();
+
+  const items = [];
+  Object.entries(Engine.LEVEL_REWARDS).forEach(([lvlStr, r]) => {
+    const level = Number(lvlStr);
+    if (r.frame) {
+      const meta = Engine.FRAMES[r.frame];
+      items.push({ kind: 'frame', id: r.frame, level, name: meta.name, swatch: meta.css });
+    }
+    if (r.theme) {
+      const meta = Engine.ThemeManager.getThemeMeta(r.theme);
+      items.push({ kind: 'theme', id: r.theme, level, name: meta.name, swatch: `linear-gradient(135deg, ${meta.cyan}, ${meta.magenta})` });
+    }
+  });
+  items.sort((a, b) => a.level - b.level);
+
+  grid.innerHTML = items.map(it => {
+    const owned = it.kind === 'frame' ? ownedFrames.includes(it.id) : ownedThemes.includes(it.id);
+    const active = it.kind === 'frame' ? activeFrame === it.id : activeTheme === it.id;
+    const stateLabel = active ? 'Активна' : (owned ? 'Обрати' : `Рівень ${it.level}`);
+    return `<div class="skin-card ${owned ? 'owned' : 'locked'} ${active ? 'active' : ''}" data-kind="${it.kind}" data-id="${it.id}">
+      <div class="skin-swatch" style="background:${it.swatch}"></div>
+      <div class="skin-name">${it.name}</div>
+      <div class="skin-state">${stateLabel}</div>
+    </div>`;
+  }).join('');
+
+  grid.querySelectorAll('.skin-card.owned').forEach(card => {
+    card.addEventListener('click', () => {
+      const kind = card.dataset.kind, id = card.dataset.id;
+      if (kind === 'frame') Engine.FrameManager.setActive(id);
+      else Engine.ThemeManager.setActive(id);
+      paintFrame();
+      buildSkinsGrid();
+    });
+  });
+}
+buildSkinsGrid();
 
 (function setupLevelModal() {
   const overlay = document.getElementById('levelModal');
@@ -214,7 +293,11 @@ const RECORD_KEYS = [
         html += `<div class="rank-divider">${row.rankStart.icon} ${row.rankStart.name} · з ${row.rankStart.min} рівня</div>`;
       }
       const cls = row.level < currentLevel ? 'reached' : (row.level === currentLevel ? 'current' : '');
-      const rewardText = row.reward > 0 ? `+${row.reward} монет` : 'старт';
+      let rewardText = row.reward > 0 ? `+${row.reward} монет` : 'старт';
+      if (row.extra) {
+        if (row.extra.frame) rewardText += ' 🖼️';
+        if (row.extra.theme) rewardText += ' 🎨';
+      }
       html += `<div class="level-row ${cls}">
         <span class="lv-tag">Рівень ${row.level}</span>
         <span class="lv-reward">${rewardText}</span>
