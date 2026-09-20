@@ -140,7 +140,8 @@
     // + рівень/XP/досягнення/рекорди. Пишеться в окрему таблицю public_stats,
     // яку читати можуть усі (див. supabase-leaderboard-schema.sql).
     async pushPublicStats() {
-      if (!supa || !this.user || !window.Engine) return;
+      if (!supa || !this.user) return;
+      if (!window.Engine) { console.warn('[koinzal] pushPublicStats: Engine ще не завантажено'); return; }
       const meta = this.user.user_metadata || {};
       const name = meta.full_name || meta.name || meta.user_name || 'Гравець';
       const avatar = meta.avatar_url || meta.picture || '';
@@ -157,11 +158,12 @@
         try { const v = localStorage.getItem(k); if (v !== null) records[k] = Number(v) || 0; } catch (e) {}
       });
       try {
-        await supa.from('public_stats').upsert({
+        const { error } = await supa.from('public_stats').upsert({
           id: this.user.id, name, avatar_url: avatar, level, xp, achievements, records,
           updated_at: new Date().toISOString()
         });
-      } catch (e) {}
+        if (error) console.error('[koinzal] pushPublicStats failed:', error);
+      } catch (e) { console.error('[koinzal] pushPublicStats threw:', e); }
     },
 
     // Топ гравців за рівнем (тайбрейк — XP). Публічний запит, працює й без входу.
@@ -172,6 +174,7 @@
         .order('level', { ascending: false })
         .order('xp', { ascending: false })
         .limit(limit || 50);
+      if (error) console.error('[koinzal] fetchLeaderboard failed:', error);
       return (!error && data) ? data : [];
     },
 
@@ -179,6 +182,7 @@
     async fetchPlayer(id) {
       if (!supa) return null;
       const { data, error } = await supa.from('public_stats').select('*').eq('id', id).maybeSingle();
+      if (error) console.error('[koinzal] fetchPlayer failed:', error);
       return (!error && data) ? data : null;
     }
   };
