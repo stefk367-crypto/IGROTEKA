@@ -17,7 +17,7 @@
   // Ключі, які завжди синхронізуємо, + всі, що закінчуються на "_best"
   // (рекорди ігор: snake_best, flappy_best, simon_best, 2048_best, ...)
   const KNOWN_KEYS = [
-    'koinzal_coins', 'koinzal_total_earned', 'koinzal_xp', 'koinzal_xp_boost_until', 'koinzal_theme',
+    'koinzal_total_earned', 'koinzal_total_spent', 'koinzal_xp', 'koinzal_xp_boost_until', 'koinzal_theme',
     'koinzal_owned_themes', 'koinzal_frame', 'koinzal_owned_frames',
     'koinzal_daily_date', 'koinzal_daily_streak'
   ];
@@ -51,8 +51,8 @@
       let local = null;
       try { local = localStorage.getItem(k); } catch (e) {}
 
-      const isNumeric = k.endsWith('_best') || k === 'koinzal_coins' ||
-        k === 'koinzal_total_earned' || k === 'koinzal_daily_streak' || k === 'koinzal_xp' ||
+      const isNumeric = k.endsWith('_best') || k === 'koinzal_total_earned' ||
+        k === 'koinzal_total_spent' || k === 'koinzal_daily_streak' || k === 'koinzal_xp' ||
         k === 'koinzal_xp_boost_until';
 
       if (isNumeric) {
@@ -130,6 +130,53 @@
       if (!supa || !this.user) return;
       const snap = snapshotLocal();
       await supa.from('profiles').upsert({ id: this.user.id, data: snap, updated_at: new Date().toISOString() });
+      await this.pushPublicStats();
+    },
+
+    // Окремий публічний "зріз" для лідерборду: нік/аватар з OAuth (не email!)
+    // + рівень/XP/досягнення/рекорди. Пишеться в окрему таблицю public_stats,
+    // яку читати можуть усі (див. supabase-leaderboard-schema.sql).
+    async pushPublicStats() {
+      if (!supa || !this.user || !window.Engine) return;
+      const meta = this.user.user_metadata || {};
+      const name = meta.full_name || meta.name || meta.user_name || 'Гравець';
+      const avatar = meta.avatar_url || meta.picture || '';
+      const level = Engine.LevelManager.getLevel();
+      const xp = Engine.LevelManager.getXp();
+      const achievements = Engine.Achievements.unlocked().length;
+      const recordKeys = [
+        'snake_best', 'tetris_best', '2048_best', 'flappy_best', 'simon_best', 'pong_wins',
+        'spaceshooter_best', 'minesweeper_wins', 'moles_best', 'memory_best_moves',
+        'arkanoid_won', 'platformer_won', 'puzzle15_solved'
+      ];
+      const records = {};
+      recordKeys.forEach(k => {
+        try { const v = localStorage.getItem(k); if (v !== null) records[k] = Number(v) || 0; } catch (e) {}
+      });
+      try {
+        await supa.from('public_stats').upsert({
+          id: this.user.id, name, avatar_url: avatar, level, xp, achievements, records,
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+    },
+
+    // Топ гравців за рівнем (тайбрейк — XP). Публічний запит, працює й без входу.
+    async fetchLeaderboard(limit) {
+      if (!supa) return [];
+      const { data, error } = await supa.from('public_stats')
+        .select('id,name,avatar_url,level,xp,achievements')
+        .order('level', { ascending: false })
+        .order('xp', { ascending: false })
+        .limit(limit || 50);
+      return (!error && data) ? data : [];
+    },
+
+    // Публічний профіль одного гравця за id — для сторінки player.html.
+    async fetchPlayer(id) {
+      if (!supa) return null;
+      const { data, error } = await supa.from('public_stats').select('*').eq('id', id).maybeSingle();
+      return (!error && data) ? data : null;
     }
   };
 

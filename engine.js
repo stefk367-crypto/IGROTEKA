@@ -157,24 +157,25 @@ function aabb(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b
 
 /* ---------- Монети: єдиний гаманець для всього порталу ---------- */
 const CoinBank = {
-  KEY: 'koinzal_coins',
   KEY_TOTAL: 'koinzal_total_earned',
-  get() {
-    try { return Number(localStorage.getItem(this.KEY) || 0); } catch (e) { return 0; }
-  },
+  KEY_SPENT: 'koinzal_total_spent',
   getTotalEarned() {
     try { return Number(localStorage.getItem(this.KEY_TOTAL) || 0); } catch (e) { return 0; }
   },
+  getTotalSpent() {
+    try { return Number(localStorage.getItem(this.KEY_SPENT) || 0); } catch (e) { return 0; }
+  },
+  // Баланс = зароблено за все життя мінус витрачено. Обидва лічильники
+  // тільки зростають, тому синхронізація між пристроями (бере максимум)
+  // ніколи не "повертає" вже витрачені монети — на відміну від зберігання
+  // самого балансу, який можна було випадково відкотити назад.
+  get() { return Math.max(0, this.getTotalEarned() - this.getTotalSpent()); },
   // Нараховує монети без нарахування досвіду — використовується для
   // самих рівневих нагород, щоб уникнути рекурсії з LevelManager.
   addSilent(amount) {
     const inc = Math.max(0, Math.floor(amount));
-    const v = this.get() + inc;
-    try {
-      localStorage.setItem(this.KEY, v);
-      localStorage.setItem(this.KEY_TOTAL, this.getTotalEarned() + inc);
-    } catch (e) {}
-    return v;
+    try { localStorage.setItem(this.KEY_TOTAL, this.getTotalEarned() + inc); } catch (e) {}
+    return this.get();
   },
   add(amount) {
     const inc = Math.max(0, Math.floor(amount));
@@ -186,12 +187,26 @@ const CoinBank = {
     return v;
   },
   spend(amount) {
-    const cur = this.get();
-    if (cur < amount) return false;
-    try { localStorage.setItem(this.KEY, cur - amount); } catch (e) {}
+    if (this.get() < amount) return false;
+    try { localStorage.setItem(this.KEY_SPENT, this.getTotalSpent() + amount); } catch (e) {}
     return true;
   }
 };
+
+// Одноразова міграція для тих, хто грав до цього фіксу: старий ключ
+// "koinzal_coins" зберігав сам баланс (а не earned/spent окремо). Тут
+// рахуємо, скільки вже "витрачено" було на момент фіксу, щоб баланс
+// після оновлення не стрибнув ані вгору, ані вниз.
+(function migrateCoinBalance() {
+  try {
+    if (localStorage.getItem('koinzal_total_spent') === null) {
+      const earned = Number(localStorage.getItem('koinzal_total_earned') || 0);
+      const oldBalance = localStorage.getItem('koinzal_coins');
+      const spent = oldBalance !== null ? Math.max(0, earned - Number(oldBalance)) : 0;
+      localStorage.setItem('koinzal_total_spent', spent);
+    }
+  } catch (e) {}
+})();
 
 /* ---------- Рівні: досвід = монети, зароблені за все життя. Рівні 1-100
    дають монетну нагороду за кожен новий рівень; після 100-го рівень

@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Профіль гравця — ІГРОТЕКА</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wrap { max-width: 640px; margin: 0 auto; padding: 40px 20px 80px; }
+  .back {
+    display: inline-block; font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    color: var(--text-dim); margin-bottom: 20px; border: 1px solid var(--line);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  .back:hover { color: var(--yellow); border-color: var(--yellow); }
+
+  .panel {
+    background: var(--paper); color: var(--ink); border-radius: 18px;
+    box-shadow: 0 10px 0 -4px rgba(0,0,0,0.18), 0 14px 24px -10px rgba(0,0,0,0.45);
+    padding: 26px; margin-bottom: 22px;
+  }
+  .p-head { display: flex; align-items: center; gap: 16px; }
+  .p-avatar {
+    width: 64px; height: 64px; border-radius: 50%; overflow: hidden; flex: 0 0 auto;
+    background: var(--bg-panel); display: flex; align-items: center; justify-content: center; font-size: 30px;
+  }
+  .p-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .p-name { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+  .p-level { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--magenta); margin-top: 2px; }
+
+  h2.section-title { font-family: var(--font-display); font-weight: 800; font-size: 17px; margin: 0 0 12px; }
+
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; }
+  .stat-box { background: var(--paper-alt, #f0e8d4); border-radius: 12px; padding: 14px 16px; }
+  .stat-box .stat-num { font-family: var(--font-display); font-weight: 800; font-size: 20px; }
+  .stat-box .stat-label { font-size: 11.5px; color: #7a6b52; margin-top: 2px; }
+
+  .records-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 10px; }
+  .record-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; background: var(--paper-alt, #f0e8d4); border-radius: 10px; padding: 10px 14px; }
+  .record-row .rec-name { font-size: 13px; font-weight: 600; }
+  .record-row .rec-val { font-family: var(--font-display); font-weight: 800; font-size: 13px; color: var(--magenta); }
+  .record-row.empty .rec-val { color: #a89e8a; }
+
+  .empty-note { text-align: center; color: var(--text-dim); font-size: 13px; padding: 44px 20px; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="leaderboard.html">← До рейтингу</a>
+  <div id="content"><div class="empty-note">Завантаження…</div></div>
+</div>
+
+<script src="config.js"></script>
+<script src="supabase-sync.js"></script>
+<script src="engine.js"></script>
+<script>
+Engine.mountCoinBadge(document.body, '');
+
+const RECORD_LABELS = {
+  snake_best:        { name: 'Змійка',    kind: 'high' },
+  tetris_best:       { name: 'Блоки',     kind: 'high' },
+  '2048_best':       { name: '2048',      kind: 'high' },
+  flappy_best:       { name: 'Літайлик',  kind: 'high' },
+  simon_best:        { name: 'Саймон',    kind: 'high', suffix: ' р.' },
+  pong_wins:         { name: 'Понг',      kind: 'high', suffix: ' перемог' },
+  spaceshooter_best: { name: 'Космобій',  kind: 'high' },
+  minesweeper_wins:  { name: 'Сапер',     kind: 'high', suffix: ' перемог' },
+  moles_best:        { name: 'Кроти',     kind: 'high' },
+  memory_best_moves: { name: "Пам'ять",   kind: 'low',  suffix: ' спроб' },
+  arkanoid_won:      { name: 'Цеглинки',  kind: 'flag' },
+  platformer_won:    { name: 'Стрибун',   kind: 'flag' },
+  puzzle15_solved:   { name: "П'ятнашки", kind: 'flag' }
+};
+
+async function waitForSupaReady(timeoutMs) {
+  const start = Date.now();
+  while (!(window.SupaSync && SupaSync.ready) && Date.now() - start < (timeoutMs || 3000)) {
+    await new Promise(r => setTimeout(r, 50));
+  }
+}
+
+(async function() {
+  const content = document.getElementById('content');
+  const id = new URLSearchParams(window.location.search).get('id');
+  if (!id) { content.innerHTML = '<div class="empty-note">Гравця не вказано.</div>'; return; }
+  if (!window.SupaSync) { content.innerHTML = '<div class="empty-note">Профіль недоступний.</div>'; return; }
+
+  await waitForSupaReady();
+  const p = await SupaSync.fetchPlayer(id);
+  if (!p) { content.innerHTML = '<div class="empty-note">Гравця не знайдено.</div>'; return; }
+
+  const rank = Engine.LevelManager.getRank(p.level);
+  const records = p.records || {};
+  const recordsHtml = Object.entries(RECORD_LABELS).map(([key, meta]) => {
+    const v = records[key] || 0;
+    let display, empty = false;
+    if (meta.kind === 'flag') { display = v >= 1 ? '✅ пройдено' : '—'; empty = v < 1; }
+    else { display = v > 0 ? v + (meta.suffix || '') : '—'; empty = v <= 0; }
+    return `<div class="record-row ${empty ? 'empty' : ''}"><span class="rec-name">${meta.name}</span><span class="rec-val">${display}</span></div>`;
+  }).join('');
+
+  content.innerHTML = `
+    <div class="panel p-head">
+      <div class="p-avatar">${p.avatar_url ? `<img src="${p.avatar_url}" alt="">` : '👤'}</div>
+      <div>
+        <div class="p-name">${p.name || 'Гравець'}</div>
+        <div class="p-level">${rank.icon} ${rank.name} · рівень ${p.level}</div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 class="section-title">Статистика</h2>
+      <div class="stats-grid">
+        <div class="stat-box"><div class="stat-num">${p.level}</div><div class="stat-label">Рівень</div></div>
+        <div class="stat-box"><div class="stat-num">${p.xp}</div><div class="stat-label">Досвід (XP)</div></div>
+        <div class="stat-box"><div class="stat-num">${p.achievements || 0}</div><div class="stat-label">Досягнення</div></div>
+      </div>
+    </div>
+    <div class="panel">
+      <h2 class="section-title">Особисті рекорди</h2>
+      <div class="records-grid">${recordsHtml}</div>
+    </div>
+  `;
+})();
+</script>
+</body>
+</html>
