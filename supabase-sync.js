@@ -90,14 +90,17 @@
       if (!supa) { this.ready = true; return; }
       const { data } = await supa.auth.getSession();
       this.user = data && data.session ? data.session.user : null;
-      if (this.user) await this.pull();
+      if (this.user) { await this.pull(); await this.push(); }
       this.ready = true;
       cleanUrlHash();
       window.dispatchEvent(new CustomEvent('supa-auth-change', { detail: this.user }));
 
       supa.auth.onAuthStateChange(async (_event, session) => {
         this.user = session ? session.user : null;
-        if (this.user) await this.pull();
+        // Одразу після входу пушимо стан — інакше рядок у public_stats
+        // (і, відповідно, у рейтингу) з'являється тільки за 30 сек
+        // таймером або коли гравець піде зі сторінки.
+        if (this.user) { await this.pull(); await this.push(); }
         cleanUrlHash();
         window.dispatchEvent(new CustomEvent('supa-auth-change', { detail: this.user }));
       });
