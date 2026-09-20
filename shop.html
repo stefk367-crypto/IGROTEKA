@@ -78,6 +78,9 @@
   }
   .endgame-card .ec-btn:disabled { background: #e3d8c0; color: #a89877; cursor: not-allowed; }
   .endgame-card .ec-timer { font-family: var(--font-display); font-weight: 700; font-size: 12.5px; color: #1f3a37; margin-bottom: 8px; }
+  .exchange-tiers { display: flex; flex-direction: column; gap: 8px; }
+  .exchange-tiers .ec-btn { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; text-align: left; }
+  .exchange-tiers .ec-btn .tier-bonus { font-weight: 600; opacity: 0.85; font-size: 11.5px; }
 </style>
 </head>
 <body>
@@ -99,8 +102,8 @@
       <div class="endgame-card">
         <div class="ec-icon">🔄</div>
         <div class="ec-title">Обміняти монети на XP</div>
-        <div class="ec-desc">100 монет → 50 XP. Курс завжди 2:1, можна робити скільки завгодно разів.</div>
-        <button class="ec-btn" id="exchangeBtn">Обміняти 100 монет</button>
+        <div class="ec-desc">Що більше міняєш за раз — то вигідніший курс.</div>
+        <div class="exchange-tiers" id="exchangeTiers"></div>
       </div>
       <div class="endgame-card">
         <div class="ec-icon">⚡</div>
@@ -210,9 +213,29 @@ function paintEndgame() {
   panel.style.display = '';
 
   const coins = Engine.CoinBank.get();
-  const exBtn = document.getElementById('exchangeBtn');
-  exBtn.disabled = coins < 100;
-  exBtn.textContent = coins < 100 ? 'Замало монет (треба 100)' : 'Обміняти 100 монет';
+
+  const tiersWrap = document.getElementById('exchangeTiers');
+  tiersWrap.innerHTML = Engine.XpExchange.TIERS.map((t, i) => {
+    const rate = t.coins / t.xp;
+    const bonusPct = Math.round((2 / rate - 1) * 100); // порівняно з базовим курсом 2:1
+    const afford = coins >= t.coins;
+    return `<button class="ec-btn" data-idx="${i}" ${afford ? '' : 'disabled'}>
+      <span>${t.coins} монет → ${t.xp} XP</span>
+      <span class="tier-bonus">${bonusPct > 0 ? '+' + bonusPct + '% курс' : 'базовий курс'}</span>
+    </button>`;
+  }).join('');
+  tiersWrap.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = Engine.XpExchange.TIERS[Number(btn.dataset.idx)];
+      if (Engine.XpExchange.exchange(t.coins, t.xp)) {
+        toast(`+${t.xp} XP за ${t.coins} монет`);
+        refreshBalance();
+        paintEndgame();
+      } else {
+        toast('Недостатньо монет');
+      }
+    });
+  });
 
   const boostBtn = document.getElementById('boosterBtn');
   const timerEl = document.getElementById('boosterTimer');
@@ -223,16 +246,6 @@ function paintEndgame() {
     ? (coins < BOOST_PRICE ? `Замало монет (треба ${BOOST_PRICE})` : `Продовжити ще на 30 хв — ${BOOST_PRICE}`)
     : (coins < BOOST_PRICE ? `Замало монет (треба ${BOOST_PRICE})` : `Купити за ${BOOST_PRICE} монет`);
 }
-
-document.getElementById('exchangeBtn').addEventListener('click', () => {
-  if (Engine.XpExchange.exchange(100)) {
-    toast('+50 XP за 100 монет');
-    refreshBalance();
-    paintEndgame();
-  } else {
-    toast('Недостатньо монет');
-  }
-});
 
 document.getElementById('boosterBtn').addEventListener('click', () => {
   if (!Engine.CoinBank.spend(BOOST_PRICE)) { toast('Недостатньо монет'); return; }

@@ -276,16 +276,17 @@ const XpBooster = {
   }
 };
 
-/* ---------- Обмін монет на XP: сенс витрачати монети, коли всі теми вже куплені. ---------- */
+/* ---------- Обмін монет на XP: сенс витрачати монети, коли всі теми вже куплені.
+   Кілька рівнів обміну — що більша сума одразу, то вигідніший курс. ---------- */
 const XpExchange = {
-  RATE: 2, // 2 монети = 1 XP
-  toXp(coins) { return Math.floor(coins / this.RATE); },
-  exchange(coins) {
-    const units = this.toXp(coins);
-    if (units <= 0) return false;
-    const cost = units * this.RATE;
-    if (!CoinBank.spend(cost)) return false;
-    LevelManager.addXp(units);
+  TIERS: [
+    { coins: 100,  xp: 50 },   // курс 2:1 — базовий
+    { coins: 500,  xp: 300 },  // курс ~1.67:1 — +20% вигідніше за базовий
+    { coins: 1000, xp: 700 }   // курс ~1.43:1 — +40% вигідніше за базовий
+  ],
+  exchange(coins, xp) {
+    if (!CoinBank.spend(coins)) return false;
+    LevelManager.addXp(xp);
     return true;
   }
 };
