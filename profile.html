@@ -16,7 +16,25 @@
   .back-link:hover { color: var(--text); }
   h1 { font-family: var(--font-display); font-weight: 800; font-size: clamp(30px, 5vw, 46px); margin: 0; color: var(--text); }
 
-  #authSlot { display: flex; justify-content: center; margin-top: 16px; }
+  .identity-card {
+    display: flex; align-items: center; gap: 16px; justify-content: center; text-align: left;
+    flex-wrap: wrap; margin-top: 6px;
+  }
+  .identity-avatar {
+    width: 56px; height: 56px; border-radius: 50%; flex: 0 0 auto; overflow: hidden;
+    background: var(--bg-panel); display: flex; align-items: center; justify-content: center;
+    font-size: 26px; border: 2px solid var(--line);
+  }
+  .identity-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .identity-name { font-family: var(--font-display); font-weight: 800; font-size: 17px; color: var(--text); }
+  .identity-provider { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+  .identity-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .identity-btn {
+    font-family: var(--font-display); font-weight: 700; font-size: 12px; padding: 8px 12px;
+    background: var(--bg-panel-raised); color: var(--text); border: 1px solid var(--line);
+    border-radius: 8px; cursor: pointer;
+  }
+  .identity-btn:hover { border-color: var(--yellow); color: var(--yellow); }
 
   .panel {
     background: var(--paper); color: var(--ink); border-radius: 18px;
@@ -140,7 +158,7 @@
   <header>
     <a href="index.html" class="back-link">← На головну</a>
     <h1>👤 Профіль гравця</h1>
-    <div id="authSlot"></div>
+    <div id="identityCard" class="identity-card"></div>
   </header>
 
   <section class="panel level-card" id="levelCard" role="button" tabindex="0">
@@ -202,7 +220,45 @@
 <script src="engine.js"></script>
 <script>
 Engine.mountCoinBadge(document.body, '');
-mountAuthWidget(document.getElementById('authSlot'));
+function paintIdentity() {
+  const card = document.getElementById('identityCard');
+  const u = window.SupaSync ? SupaSync.user : null;
+
+  if (u) {
+    const meta = u.user_metadata || {};
+    const avatar = meta.avatar_url || meta.picture || '';
+    const name = meta.full_name || meta.name || meta.user_name || u.email || 'Гравець';
+    const provider = (u.app_metadata && u.app_metadata.provider) ||
+      (u.identities && u.identities[0] && u.identities[0].provider) || '';
+    const providerLabel = provider === 'google' ? 'Google' : provider === 'github' ? 'GitHub' : '';
+
+    card.innerHTML = `
+      <div class="identity-avatar">${avatar ? `<img src="${avatar}" alt="">` : '👤'}</div>
+      <div>
+        <div class="identity-name">${name}</div>
+        <div class="identity-provider">${providerLabel ? `Увійшов через ${providerLabel}` : u.email || ''}</div>
+      </div>
+      <button class="identity-btn" id="identityLogout">Вийти</button>
+    `;
+    document.getElementById('identityLogout').onclick = () => SupaSync.signOut();
+  } else {
+    card.innerHTML = `
+      <div class="identity-avatar">👤</div>
+      <div>
+        <div class="identity-name">Гість</div>
+        <div class="identity-provider">Увійди, щоб бачити свій нік і зберігати прогрес між пристроями</div>
+      </div>
+      <div class="identity-actions">
+        <button class="identity-btn" id="loginGoogle">Google</button>
+        <button class="identity-btn" id="loginGithub">GitHub</button>
+      </div>
+    `;
+    document.getElementById('loginGoogle').onclick = () => SupaSync.signInGoogle();
+    document.getElementById('loginGithub').onclick = () => SupaSync.signInGithub();
+  }
+}
+paintIdentity();
+window.addEventListener('supa-auth-change', paintIdentity);
 
 const RECORD_KEYS = [
   { key: 'snake_best',        name: 'Змійка',    kind: 'high' },
