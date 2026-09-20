@@ -105,6 +105,20 @@
   .level-row.reached .lv-reward, .level-row.current .lv-reward { color: #4a4636; }
   .beyond-row { margin-top: 4px; text-align: center; font-size: 12px; color: #6b6050; font-style: italic; }
 
+  /* Щоденні місії */
+  .missions-list { display: flex; flex-direction: column; gap: 10px; }
+  .mission-row { background: var(--paper-alt); border-radius: 12px; padding: 12px 14px; }
+  .mission-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .mission-desc { font-size: 13px; font-weight: 600; }
+  .mission-xp { font-family: var(--font-display); font-weight: 800; font-size: 12.5px; color: var(--magenta); flex: 0 0 auto; }
+  .mission-row.done .mission-desc { color: #3f7a2f; }
+  .mission-row.done .mission-xp::before { content: '✅ '; }
+  .mission-bar-track { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.08); overflow: hidden; }
+  .mission-bar-fill { height: 100%; border-radius: 999px; background: var(--magenta); transition: width .3s ease; }
+  .mission-row.done .mission-bar-fill { background: #4caf7d; }
+  .mission-progress-num { font-size: 11px; color: #6b6050; margin-top: 4px; text-align: right; }
+  .missions-reset-note { margin-top: 10px; font-size: 11.5px; color: #8a8069; font-style: italic; text-align: center; }
+
   /* Скіни та немонетні нагороди за рівень */
   .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
   .skin-card {
@@ -159,6 +173,12 @@
       <div class="modal-list" id="modalList"></div>
     </div>
   </div>
+
+  <section class="panel">
+    <h2 class="section-title">🎯 Щоденні місії</h2>
+    <div class="missions-list" id="missionsList"></div>
+    <div class="missions-reset-note">Нові 3 місії — щодня опівночі. Не встиг — нічого не горить, просто без бонусного XP.</div>
+  </section>
 
   <section class="panel">
     <h2 class="section-title">Скіни та нагороди за рівень</h2>
@@ -230,6 +250,23 @@ function paintFrame() {
     document.getElementById('xpSub').textContent = `За наступний рівень — бонус +${reward} монет.`;
   }
 })();
+
+function buildMissionsList() {
+  const wrap = document.getElementById('missionsList');
+  const missions = Engine.DailyMissions.getStatus();
+  wrap.innerHTML = missions.map(m => {
+    const pct = Math.round((m.progress / m.target) * 100);
+    return `<div class="mission-row ${m.done ? 'done' : ''}">
+      <div class="mission-top">
+        <span class="mission-desc">${m.desc}</span>
+        <span class="mission-xp">+${m.xp} XP</span>
+      </div>
+      <div class="mission-bar-track"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mission-progress-num">${m.progress} / ${m.target}</div>
+    </div>`;
+  }).join('');
+}
+buildMissionsList();
 
 function buildSkinsGrid() {
   const grid = document.getElementById('skinsGrid');

@@ -94,6 +94,18 @@
   .daily-banner button:hover { filter: brightness(1.08); }
   .daily-banner button:disabled { background: #cfc6b3; color: #8a7f66; cursor: default; }
 
+  .missions-banner {
+    margin-top: 12px; display: inline-flex; align-items: center; gap: 12px;
+    background: var(--paper); border-radius: 14px; padding: 12px 20px;
+    box-shadow: 0 8px 0 -4px rgba(0,0,0,0.18), 0 12px 20px -10px rgba(0,0,0,0.4);
+  }
+  .missions-banner span { font-family: var(--font-display); font-weight: 700; font-size: 13px; color: var(--ink); }
+  .missions-banner a {
+    font-family: var(--font-display); font-weight: 700; font-size: 12px; padding: 8px 14px;
+    background: var(--magenta); color: var(--paper); border-radius: 8px; text-decoration: none;
+  }
+  .missions-banner a:hover { filter: brightness(1.08); }
+
   .shelf {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
@@ -258,6 +270,7 @@
     <a href="profile.html" class="shop-link" style="background: var(--magenta); color: var(--text);">👤 Профіль</a>
     <a href="settings.html" class="shop-link" style="background: var(--bg-panel-raised); color: var(--text);">⚙️ Налаштування</a>
     <div id="dailyBanner"></div>
+    <div id="missionsBanner"></div>
   </header>
 
   <main class="shelf">
@@ -552,6 +565,17 @@ mountAuthWidget(document.getElementById('dailyBanner').parentElement);
     }
   }
   paint();
+})();
+
+(function() {
+  const el = document.getElementById('missionsBanner');
+  const missions = Engine.DailyMissions.getStatus();
+  const done = missions.filter(m => m.done).length;
+  el.innerHTML = `
+    <div class="missions-banner">
+      <span>🎯 Щоденні місії: ${done}/${missions.length} виконано</span>
+      <a href="profile.html">Переглянути</a>
+    </div>`;
 })();
 
 (function() {

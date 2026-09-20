@@ -21,7 +21,6 @@
     'koinzal_owned_themes', 'koinzal_frame', 'koinzal_owned_frames',
     'koinzal_daily_date', 'koinzal_daily_streak'
   ];
-
   function collectBestKeys() {
     const out = [];
     try {

@@ -179,7 +179,10 @@ const CoinBank = {
   add(amount) {
     const inc = Math.max(0, Math.floor(amount));
     const v = this.addSilent(inc);
-    if (inc > 0) LevelManager.addXp(inc);
+    if (inc > 0) {
+      LevelManager.addXp(inc);
+      DailyMissions.addCoins(inc);
+    }
     return v;
   },
   spend(amount) {
@@ -373,6 +376,141 @@ const DailyBonus = {
   }
 };
 
+/* ---------- Щоденні місії: 3 випадкові (за датою) завдання на день,
+   дають багато XP одразу при виконанні — привід зайти щодня. ---------- */
+const MISSION_POOL = [
+  { id: 'coins50',    desc: 'Заробити 50 монет за сьогодні',         xp: 60,  target: 50,  type: 'coins' },
+  { id: 'coins120',   desc: 'Заробити 120 монет за сьогодні',        xp: 110, target: 120, type: 'coins' },
+  { id: 'games2',     desc: 'Зіграти у 2 різні ігри',                xp: 50,  target: 2,   type: 'uniqueGames' },
+  { id: 'games3',     desc: 'Зіграти у 3 різні ігри',                xp: 80,  target: 3,   type: 'uniqueGames' },
+  { id: 'sessions3',  desc: 'Зіграти 3 раунди (будь-які ігри)',      xp: 40,  target: 3,   type: 'sessions' },
+  { id: 'sessions6',  desc: 'Зіграти 6 раундів (будь-які ігри)',     xp: 90,  target: 6,   type: 'sessions' },
+  { id: 'achieve1',   desc: 'Розблокувати нове досягнення',          xp: 100, target: 1,   type: 'achievements' }
+];
+
+const DailyMissions = {
+  KEY_DATE: 'koinzal_missions_date',
+  KEY_PICKED: 'koinzal_missions_picked',
+  KEY_CLAIMED: 'koinzal_missions_claimed',
+  KEY_COINS: 'koinzal_missions_coins_today',
+  KEY_SESSIONS: 'koinzal_missions_sessions_today',
+  KEY_GAMES: 'koinzal_missions_games_today',
+  KEY_ACH: 'koinzal_missions_ach_today',
+
+  todayStr() { return new Date().toISOString().slice(0, 10); },
+
+  // Детермінований вибір 3 місій із пулу — однаковий набір на весь день
+  // і на всіх пристроях гравця, без потреби синхронізувати вибір окремо.
+  _pickForToday() {
+    let seed = 0;
+    for (const ch of this.todayStr()) seed += ch.charCodeAt(0);
+    const used = new Set();
+    const picked = [];
+    let x = seed || 1;
+    while (picked.length < 3 && used.size < MISSION_POOL.length) {
+      x = (x * 9301 + 49297) % 233280;
+      const i = x % MISSION_POOL.length;
+      if (!used.has(i)) { used.add(i); picked.push(MISSION_POOL[i].id); }
+    }
+    return picked;
+  },
+
+  ensureToday() {
+    let storedDate = null;
+    try { storedDate = localStorage.getItem(this.KEY_DATE); } catch (e) {}
+    if (storedDate === this.todayStr()) return;
+    try {
+      localStorage.setItem(this.KEY_DATE, this.todayStr());
+      localStorage.setItem(this.KEY_CLAIMED, '[]');
+      localStorage.setItem(this.KEY_COINS, '0');
+      localStorage.setItem(this.KEY_SESSIONS, '0');
+      localStorage.setItem(this.KEY_GAMES, '[]');
+      localStorage.setItem(this.KEY_ACH, '0');
+      localStorage.setItem(this.KEY_PICKED, JSON.stringify(this._pickForToday()));
+    } catch (e) {}
+  },
+
+  getPicked() {
+    this.ensureToday();
+    try {
+      const ids = JSON.parse(localStorage.getItem(this.KEY_PICKED) || '[]');
+      return ids.map(id => MISSION_POOL.find(m => m.id === id)).filter(Boolean);
+    } catch (e) { return []; }
+  },
+
+  getClaimed() {
+    try { return JSON.parse(localStorage.getItem(this.KEY_CLAIMED) || '[]'); } catch (e) { return []; }
+  },
+
+  _counterFor(type) {
+    if (type === 'coins') return safeNum(this.KEY_COINS);
+    if (type === 'sessions') return safeNum(this.KEY_SESSIONS);
+    if (type === 'achievements') return safeNum(this.KEY_ACH);
+    if (type === 'uniqueGames') {
+      try { return (JSON.parse(localStorage.getItem(this.KEY_GAMES) || '[]')).length; } catch (e) { return 0; }
+    }
+    return 0;
+  },
+
+  // Місії дня разом із прогресом і статусом — для відображення в UI.
+  getStatus() {
+    this.ensureToday();
+    const claimed = this.getClaimed();
+    return this.getPicked().map(m => {
+      const progress = Math.min(m.target, this._counterFor(m.type));
+      return { ...m, progress, done: progress >= m.target, claimed: claimed.includes(m.id) };
+    });
+  },
+
+  // Перевіряє всі сьогоднішні місії й одразу видає XP за щойно виконані.
+  _checkAndClaim() {
+    const claimed = new Set(this.getClaimed());
+    const toastLines = [];
+    this.getPicked().forEach(m => {
+      if (claimed.has(m.id)) return;
+      if (this._counterFor(m.type) >= m.target) {
+        LevelManager.addXp(m.xp);
+        claimed.add(m.id);
+        toastLines.push(`✅ Місія виконана: ${m.desc} · +${m.xp} XP`);
+      }
+    });
+    if (toastLines.length) {
+      try { localStorage.setItem(this.KEY_CLAIMED, JSON.stringify(Array.from(claimed))); } catch (e) {}
+      showToast(toastLines);
+    }
+  },
+
+  addCoins(amount) {
+    this.ensureToday();
+    const v = safeNum(this.KEY_COINS) + Math.max(0, Math.floor(amount));
+    try { localStorage.setItem(this.KEY_COINS, v); } catch (e) {}
+    this._checkAndClaim();
+  },
+
+  addAchievements(count) {
+    if (count <= 0) return;
+    this.ensureToday();
+    const v = safeNum(this.KEY_ACH) + count;
+    try { localStorage.setItem(this.KEY_ACH, v); } catch (e) {}
+    this._checkAndClaim();
+  },
+
+  // Викликається автоматично при заході на сторінку відомої гри.
+  registerGameSession(gameId) {
+    this.ensureToday();
+    const sessions = safeNum(this.KEY_SESSIONS) + 1;
+    try { localStorage.setItem(this.KEY_SESSIONS, sessions); } catch (e) {}
+    try {
+      const games = JSON.parse(localStorage.getItem(this.KEY_GAMES) || '[]');
+      if (!games.includes(gameId)) {
+        games.push(gameId);
+        localStorage.setItem(this.KEY_GAMES, JSON.stringify(games));
+      }
+    } catch (e) {}
+    this._checkAndClaim();
+  }
+};
+
 /* ---------- Теми: акцентні кольори, які можна купити в магазині ---------- */
 const THEMES = {
   default:  { name: 'Смарагд',   price: 0,   cyan: '#5fd0c2', magenta: '#ef6b52', yellow: '#f0a93b', bg: '#15302e', bgPanel: '#1d3e3b', bgPanelRaised: '#244a46', line: '#35564f' },
@@ -556,7 +694,43 @@ function showToast(messages) {
 // одразу нараховуємо XP (включно заднім числом за вже наявні).
 (function grantAchievementXpOnLoad() {
   const newly = Achievements.grantXp();
-  if (newly.length) showToast(newly.map(it => `${it.icon || '🏆'} ${it.name} · +${it.xp} XP`));
+  if (newly.length) {
+    showToast(newly.map(it => `${it.icon || '🏆'} ${it.name} · +${it.xp} XP`));
+    DailyMissions.addAchievements(newly.length);
+  }
+})();
+
+// Заднім числом видає рамки/ексклюзивні теми за рівні, які гравець
+// пройшов ДО того, як ці нагороди з'явилися в LEVEL_REWARDS.
+(function grantLevelRewardsOnLoad() {
+  const currentLevel = LevelManager.getLevel();
+  const toastLines = [];
+  Object.entries(LEVEL_REWARDS).forEach(([lvlStr, r]) => {
+    if (Number(lvlStr) > currentLevel) return;
+    if (r.frame && !FrameManager.getOwned().includes(r.frame)) {
+      FrameManager.own(r.frame);
+      toastLines.push(`🖼️ Отримано рамку: ${FRAMES[r.frame].name}`);
+    }
+    if (r.theme && !ThemeManager.getOwned().includes(r.theme)) {
+      ThemeManager.own(r.theme);
+      const meta = EXCLUSIVE_THEMES[r.theme];
+      toastLines.push(`🎨 Отримано тему: ${meta ? meta.name : r.theme}`);
+    }
+  });
+  if (toastLines.length) showToast(toastLines);
+})();
+
+// Якщо поточна сторінка — одна з відомих ігор, зараховуємо ігровий раунд
+// у прогрес щоденних місій (унікальні ігри + кількість раундів за сьогодні).
+const KNOWN_GAME_IDS = [
+  'snake', 'tetris', '2048', 'flappy', 'arkanoid', 'memory', 'minesweeper',
+  'moles', 'platformer', 'pong', 'puzzle15', 'simon', 'spaceshooter'
+];
+(function registerGameSessionOnLoad() {
+  try {
+    const pageId = (location.pathname.split('/').pop() || '').replace(/\.html?$/i, '');
+    if (KNOWN_GAME_IDS.includes(pageId)) DailyMissions.registerGameSession(pageId);
+  } catch (e) {}
 })();
 
 function mountCoinBadge(container, rootPrefix) {
@@ -642,4 +816,4 @@ function mountFullscreenButton(container) {
   } catch (e) {}
 })();
 
-window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, Achievements, LevelManager };
+window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager };
