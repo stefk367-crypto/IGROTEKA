@@ -51,6 +51,17 @@
   .ring-label { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
   .ring-label .lvl-num { font-family: var(--font-display); font-weight: 800; font-size: 34px; line-height: 1; }
   .ring-label .lvl-tag { font-family: var(--font-display); font-weight: 700; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #6b6050; }
+  .ring-avatar {
+    position: absolute; inset: 15px; border-radius: 50%; overflow: hidden; z-index: 1;
+    background: var(--bg-panel); display: flex; align-items: center; justify-content: center; font-size: 38px;
+  }
+  .ring-avatar img { width: 100%; height: 100%; object-fit: cover; }
+  .level-badge {
+    position: absolute; right: -2px; bottom: -2px; z-index: 2;
+    width: 38px; height: 38px; border-radius: 50%; background: var(--magenta); color: #fff;
+    border: 3px solid var(--paper); display: flex; align-items: center; justify-content: center;
+    font-family: var(--font-display); font-weight: 800; font-size: 14px;
+  }
 
   .level-info { flex: 1; min-width: 200px; }
   .rank-tag {
@@ -168,10 +179,8 @@
         <circle class="ring-track" cx="60" cy="60" r="52"></circle>
         <circle class="ring-fill" id="ringFill" cx="60" cy="60" r="52"></circle>
       </svg>
-      <div class="ring-label">
-        <div class="lvl-num" id="lvlNum">1</div>
-        <div class="lvl-tag">рівень</div>
-      </div>
+      <div class="ring-avatar" id="ringAvatar">👤</div>
+      <div class="level-badge" id="levelBadge">1</div>
     </div>
     <div class="level-info">
       <div class="rank-tag" id="rankTag"></div>
@@ -220,6 +229,13 @@
 <script src="engine.js"></script>
 <script>
 Engine.mountCoinBadge(document.body, '');
+function getAvatarUrl() {
+  const u = window.SupaSync ? SupaSync.user : null;
+  if (!u) return '';
+  const meta = u.user_metadata || {};
+  return meta.avatar_url || meta.picture || '';
+}
+
 function paintIdentity() {
   const card = document.getElementById('identityCard');
   const u = window.SupaSync ? SupaSync.user : null;
@@ -258,7 +274,7 @@ function paintIdentity() {
   }
 }
 paintIdentity();
-window.addEventListener('supa-auth-change', paintIdentity);
+window.addEventListener('supa-auth-change', () => { paintIdentity(); paintRingAvatar(); });
 
 const RECORD_KEYS = [
   { key: 'snake_best',        name: 'Змійка',    kind: 'high' },
@@ -282,9 +298,15 @@ function paintFrame() {
   document.getElementById('ringFrame').style.background = frame.css;
 }
 
+function paintRingAvatar() {
+  const avatar = getAvatarUrl();
+  document.getElementById('ringAvatar').innerHTML = avatar ? `<img src="${avatar}" alt="">` : '👤';
+}
+
 (function paintLevel() {
   const p = Engine.LevelManager.getProgress();
-  document.getElementById('lvlNum').textContent = p.level;
+  document.getElementById('levelBadge').textContent = p.level;
+  paintRingAvatar();
   document.getElementById('xpLine').textContent = p.rewardsOver
     ? `${p.xp} XP всього`
     : `${p.xpIntoLevel} / ${p.xpForNext} XP до наступного рівня`;
