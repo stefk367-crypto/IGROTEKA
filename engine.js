@@ -259,6 +259,37 @@ const LEVEL_THRESHOLDS = (() => {
   return arr;
 })();
 
+/* ---------- XP-бустер: тимчасовий множник XP, купується за монети в
+   магазині — розблоковується після купівлі всіх тем (див. shop.html). ---------- */
+const XpBooster = {
+  KEY_UNTIL: 'koinzal_xp_boost_until',
+  DURATION_MS: 30 * 60 * 1000,
+  MULTIPLIER: 2,
+  getUntil() { return safeNum(this.KEY_UNTIL); },
+  isActive() { return Date.now() < this.getUntil(); },
+  remainingMs() { return Math.max(0, this.getUntil() - Date.now()); },
+  // Активація продовжує поточний бустер, якщо він ще діє, а не перезаписує його.
+  activate() {
+    const now = Date.now();
+    const base = Math.max(now, this.getUntil());
+    try { localStorage.setItem(this.KEY_UNTIL, base + this.DURATION_MS); } catch (e) {}
+  }
+};
+
+/* ---------- Обмін монет на XP: сенс витрачати монети, коли всі теми вже куплені. ---------- */
+const XpExchange = {
+  RATE: 2, // 2 монети = 1 XP
+  toXp(coins) { return Math.floor(coins / this.RATE); },
+  exchange(coins) {
+    const units = this.toXp(coins);
+    if (units <= 0) return false;
+    const cost = units * this.RATE;
+    if (!CoinBank.spend(cost)) return false;
+    LevelManager.addXp(units);
+    return true;
+  }
+};
+
 const LevelManager = {
   KEY_XP: 'koinzal_xp',
   MAX_REWARD_LEVEL,
@@ -321,8 +352,9 @@ const LevelManager = {
   // Додає XP і, якщо перетнули один чи кілька рівнів, нараховує монетну
   // нагороду (тільки <=100) та видає рамки/ексклюзивні теми з LEVEL_REWARDS.
   addXp(amount) {
-    const inc = Math.max(0, Math.floor(amount));
+    let inc = Math.max(0, Math.floor(amount));
     if (inc <= 0) return null;
+    if (XpBooster.isActive()) inc *= XpBooster.MULTIPLIER;
     const before = this.getXp();
     const beforeLevel = this.getLevel(before);
     const after = before + inc;
@@ -816,4 +848,4 @@ function mountFullscreenButton(container) {
   } catch (e) {}
 })();
 
-window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager };
+window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange };

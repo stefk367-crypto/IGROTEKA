@@ -17,7 +17,7 @@
   // Ключі, які завжди синхронізуємо, + всі, що закінчуються на "_best"
   // (рекорди ігор: snake_best, flappy_best, simon_best, 2048_best, ...)
   const KNOWN_KEYS = [
-    'koinzal_coins', 'koinzal_total_earned', 'koinzal_xp', 'koinzal_theme',
+    'koinzal_coins', 'koinzal_total_earned', 'koinzal_xp', 'koinzal_xp_boost_until', 'koinzal_theme',
     'koinzal_owned_themes', 'koinzal_frame', 'koinzal_owned_frames',
     'koinzal_daily_date', 'koinzal_daily_streak'
   ];
@@ -52,7 +52,8 @@
       try { local = localStorage.getItem(k); } catch (e) {}
 
       const isNumeric = k.endsWith('_best') || k === 'koinzal_coins' ||
-        k === 'koinzal_total_earned' || k === 'koinzal_daily_streak' || k === 'koinzal_xp';
+        k === 'koinzal_total_earned' || k === 'koinzal_daily_streak' || k === 'koinzal_xp' ||
+        k === 'koinzal_xp_boost_until';
 
       if (isNumeric) {
         const rv = Number(remote) || 0, lv = Number(local) || 0;

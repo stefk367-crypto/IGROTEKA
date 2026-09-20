@@ -60,6 +60,24 @@
     color: var(--text); opacity: 0; transition: all 0.25s ease; pointer-events: none;
   }
   .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+  .endgame-panel {
+    margin-top: 44px; background: var(--paper); border-radius: 18px; padding: 26px;
+    box-shadow: 0 10px 0 -4px rgba(0,0,0,0.18), 0 14px 24px -10px rgba(0,0,0,0.4);
+  }
+  .endgame-panel h2 { font-family: var(--font-display); font-weight: 800; font-size: 20px; color: var(--ink); margin: 0 0 4px; }
+  .endgame-panel .endgame-sub { color: #7a6b52; font-size: 13px; margin: 0 0 20px; line-height: 1.5; }
+  .endgame-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 18px; }
+  .endgame-card { background: #f0e8d4; border-radius: 14px; padding: 18px; text-align: center; }
+  .endgame-card .ec-icon { font-size: 28px; margin-bottom: 8px; }
+  .endgame-card .ec-title { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--ink); margin-bottom: 4px; }
+  .endgame-card .ec-desc { font-size: 12.5px; color: #7a6b52; margin-bottom: 14px; line-height: 1.5; }
+  .endgame-card .ec-btn {
+    width: 100%; font-family: var(--font-display); font-weight: 700; font-size: 13px;
+    padding: 10px; border-radius: 10px; border: none; cursor: pointer; background: #1f3a37; color: var(--paper);
+  }
+  .endgame-card .ec-btn:disabled { background: #e3d8c0; color: #a89877; cursor: not-allowed; }
+  .endgame-card .ec-timer { font-family: var(--font-display); font-weight: 700; font-size: 12.5px; color: #1f3a37; margin-bottom: 8px; }
 </style>
 </head>
 <body>
@@ -73,6 +91,26 @@
   </header>
 
   <div class="grid" id="grid"></div>
+
+  <div class="endgame-panel" id="endgamePanel" style="display:none;">
+    <h2>🏁 Усі теми зібрано!</h2>
+    <p class="endgame-sub">Монетам більше нема на що йти в магазині — тепер їх можна міняти на досвід.</p>
+    <div class="endgame-cards">
+      <div class="endgame-card">
+        <div class="ec-icon">🔄</div>
+        <div class="ec-title">Обміняти монети на XP</div>
+        <div class="ec-desc">100 монет → 50 XP. Курс завжди 2:1, можна робити скільки завгодно разів.</div>
+        <button class="ec-btn" id="exchangeBtn">Обміняти 100 монет</button>
+      </div>
+      <div class="endgame-card">
+        <div class="ec-icon">⚡</div>
+        <div class="ec-title">XP-бустер ×2</div>
+        <div class="ec-desc">Подвоює весь XP (з ігор, місій, досягнень) на 30 хвилин. Купівля під час дії — продовжує таймер.</div>
+        <div class="ec-timer" id="boosterTimer"></div>
+        <button class="ec-btn" id="boosterBtn">Купити за 150 монет</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -152,6 +190,60 @@ function render() {
 
 refreshBalance();
 render();
+
+const BOOST_PRICE = 150;
+
+function hasAllThemes() {
+  const owned = Engine.ThemeManager.getOwned();
+  return Object.keys(Engine.THEMES).every(id => owned.includes(id));
+}
+
+function formatTimer(ms) {
+  const total = Math.ceil(ms / 1000);
+  const m = Math.floor(total / 60), s = total % 60;
+  return `${m}:${s < 10 ? '0' : ''}${s}`;
+}
+
+function paintEndgame() {
+  const panel = document.getElementById('endgamePanel');
+  if (!hasAllThemes()) { panel.style.display = 'none'; return; }
+  panel.style.display = '';
+
+  const coins = Engine.CoinBank.get();
+  const exBtn = document.getElementById('exchangeBtn');
+  exBtn.disabled = coins < 100;
+  exBtn.textContent = coins < 100 ? 'Замало монет (треба 100)' : 'Обміняти 100 монет';
+
+  const boostBtn = document.getElementById('boosterBtn');
+  const timerEl = document.getElementById('boosterTimer');
+  const active = Engine.XpBooster.isActive();
+  timerEl.textContent = active ? `Активний ще ${formatTimer(Engine.XpBooster.remainingMs())}` : '';
+  boostBtn.disabled = coins < BOOST_PRICE;
+  boostBtn.textContent = active
+    ? (coins < BOOST_PRICE ? `Замало монет (треба ${BOOST_PRICE})` : `Продовжити ще на 30 хв — ${BOOST_PRICE}`)
+    : (coins < BOOST_PRICE ? `Замало монет (треба ${BOOST_PRICE})` : `Купити за ${BOOST_PRICE} монет`);
+}
+
+document.getElementById('exchangeBtn').addEventListener('click', () => {
+  if (Engine.XpExchange.exchange(100)) {
+    toast('+50 XP за 100 монет');
+    refreshBalance();
+    paintEndgame();
+  } else {
+    toast('Недостатньо монет');
+  }
+});
+
+document.getElementById('boosterBtn').addEventListener('click', () => {
+  if (!Engine.CoinBank.spend(BOOST_PRICE)) { toast('Недостатньо монет'); return; }
+  Engine.XpBooster.activate();
+  toast('XP-бустер ×2 активовано на 30 хв');
+  refreshBalance();
+  paintEndgame();
+});
+
+paintEndgame();
+setInterval(paintEndgame, 1000);
 </script>
 </body>
 </html>
