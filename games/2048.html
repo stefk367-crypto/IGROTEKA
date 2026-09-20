@@ -206,7 +206,9 @@ function checkGameState() {
   if (!hasMoves()) {
     running = false;
     sound.gameOver();
-    document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — ХІД НЕМОЖЛИВИЙ. РАХУНОК ' + score;
+    const earned = Math.max(1, Math.floor(score / 50));
+    Engine.CoinBank.add(earned);
+    document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — ХІД НЕМОЖЛИВИЙ. РАХУНОК ' + score + ' · +' + earned + ' монет';
   }
 }
 

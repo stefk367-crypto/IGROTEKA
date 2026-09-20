@@ -407,7 +407,9 @@ function gameOver() {
   let best = 0;
   try { best = Number(localStorage.getItem('tetris_best') || 0); } catch (e) {}
   if (score > best) { try { localStorage.setItem('tetris_best', score); } catch (e) {} }
-  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО';
+  const earned = Math.max(1, Math.floor(score / 100));
+  Engine.CoinBank.add(earned);
+  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = '▸ ЗІГРАТИ ЩЕ РАЗ';
   render();
 }

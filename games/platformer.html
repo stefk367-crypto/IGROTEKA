@@ -329,7 +329,9 @@ function winGame() {
   running = false;
   loop.stop();
   sound.win();
-  document.getElementById('msg').textContent = 'ПЕРЕМОГА! УСІ МОНЕТИ ЗІБРАНО';
+  const earned = coins.length * 3 + 20;
+  Engine.CoinBank.add(earned);
+  document.getElementById('msg').textContent = 'ПЕРЕМОГА! УСІ МОНЕТИ ЗІБРАНО · +' + earned + ' монет порталу';
   document.getElementById('startBtn').textContent = '▸ ЗІГРАТИ ЩЕ РАЗ';
   try { localStorage.setItem('platformer_won', '1'); } catch (e) {}
 }
@@ -338,7 +340,9 @@ function gameOver() {
   running = false;
   loop.stop();
   sound.gameOver();
-  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — ЖИТТЯ СКІНЧИЛИСЬ';
+  const earned = Math.max(1, collected * 2);
+  Engine.CoinBank.add(earned);
+  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — ЖИТТЯ СКІНЧИЛИСЬ · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = '▸ СПРОБУВАТИ ЩЕ РАЗ';
 }
 

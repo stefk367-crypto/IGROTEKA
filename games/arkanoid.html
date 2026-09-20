@@ -223,7 +223,9 @@ function winLevel() {
   running = false;
   loop.stop();
   sound.win();
-  msgEl.textContent = 'ПЕРЕМОГА! УСІ ЦЕГЛИНКИ РОЗБИТО — РАХУНОК ' + score;
+  const earned = Math.floor(score / 10) + 20;
+  Engine.CoinBank.add(earned);
+  msgEl.textContent = 'ПЕРЕМОГА! УСІ ЦЕГЛИНКИ РОЗБИТО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = 'Зіграти ще раз';
   try { localStorage.setItem('arkanoid_won', '1'); } catch (e) {}
 }
@@ -232,7 +234,9 @@ function gameOver() {
   running = false;
   loop.stop();
   sound.gameOver();
-  msgEl.textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score;
+  const earned = Math.max(1, Math.floor(score / 10));
+  Engine.CoinBank.add(earned);
+  msgEl.textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = 'Спробувати ще раз';
 }
 

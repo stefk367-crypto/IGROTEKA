@@ -198,7 +198,9 @@ function gameOver() {
     try { localStorage.setItem('snake_best', best); } catch (e) { /* сховище недоступне */ }
     document.getElementById('best').textContent = 'РЕКОРД: ' + best;
   }
-  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score;
+  const earned = Math.max(1, Math.floor(score / 5));
+  Engine.CoinBank.add(earned);
+  document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = '▸ ЗІГРАТИ ЩЕ РАЗ';
   render(1);
 }

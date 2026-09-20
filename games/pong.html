@@ -187,14 +187,21 @@ function score(who) {
 function endGame(won) {
   running = false;
   loop.stop();
+  let earned;
   if (won) {
     sound.win();
-    msgEl.textContent = 'ПЕРЕМОГА! ТИ СИЛЬНІШИЙ ЗА КОМП\u2019ЮТЕР';
+    earned = 25 + p1.score;
     let wins = 0;
     try { wins = Number(localStorage.getItem('pong_wins') || 0); } catch (e) {}
     try { localStorage.setItem('pong_wins', wins + 1); } catch (e) {}
+    msgEl.textContent = 'ПЕРЕМОГА! ТИ СИЛЬНІШИЙ ЗА КОМП\u2019ЮТЕР · +' + earned + ' монет';
   }
-  else { sound.gameOver(); msgEl.textContent = 'ПОРАЗКА — КОМП\u2019ЮТЕР ВИЯВИВСЯ СПРИТНІШИМ'; }
+  else {
+    sound.gameOver();
+    earned = Math.max(1, p1.score * 2);
+    msgEl.textContent = 'ПОРАЗКА — КОМП\u2019ЮТЕР ВИЯВИВСЯ СПРИТНІШИМ · +' + earned + ' монет';
+  }
+  Engine.CoinBank.add(earned);
   document.getElementById('startBtn').textContent = 'Зіграти ще раз';
 }
 
