@@ -309,6 +309,7 @@ const XpExchange = {
   exchange(coins, xp) {
     if (!CoinBank.spend(coins)) return false;
     LevelManager.addXp(xp);
+    try { localStorage.setItem('koinzal_xp_exchange_count', safeNum('koinzal_xp_exchange_count') + 1); } catch (e) {}
     return true;
   }
 };
@@ -522,7 +523,8 @@ const DailyMissions = {
   _checkAndClaim() {
     const claimed = new Set(this.getClaimed());
     const toastLines = [];
-    this.getPicked().forEach(m => {
+    const picked = this.getPicked();
+    picked.forEach(m => {
       if (claimed.has(m.id)) return;
       if (this._counterFor(m.type) >= m.target) {
         LevelManager.addXp(m.xp);
@@ -533,6 +535,11 @@ const DailyMissions = {
     if (toastLines.length) {
       try { localStorage.setItem(this.KEY_CLAIMED, JSON.stringify(Array.from(claimed))); } catch (e) {}
       showToast(toastLines);
+    }
+    // Прапорець "хоч раз виконав усі 3 місії за день" — для ачивки
+    // 'perfect_day'. Окремий від денного стану, бо той щодня скидається.
+    if (picked.length && claimed.size >= picked.length) {
+      try { localStorage.setItem('koinzal_missions_perfect_day_ever', '1'); } catch (e) {}
     }
   },
 
@@ -696,6 +703,8 @@ const ACHIEVEMENTS = [
   { id: 'level10',      name: 'Досвідчений гравець', icon: '🎮', desc: 'Досягти 10 рівня', check: () => LevelManager.getLevel() >= 10 },
   { id: 'level50',      name: 'Ветеран порталу', icon: '🥈', desc: 'Досягти 50 рівня', check: () => LevelManager.getLevel() >= 50 },
   { id: 'level100',     name: 'Максимальний рівень', icon: '🥇', desc: 'Досягти 100 рівня', check: () => LevelManager.getLevel() >= 100 },
+  { id: 'exchanger',    name: 'Оптовий обмін',   icon: '🔄', desc: 'Обміняти монети на XP 10 разів', check: () => safeNum('koinzal_xp_exchange_count') >= 10 },
+  { id: 'perfect_day',  name: 'Ідеальний день',  icon: '📅', desc: 'Виконати всі 3 щоденні місії за один день', check: () => safeNum('koinzal_missions_perfect_day_ever') >= 1 },
   { id: 'legend',       name: 'Легенда порталу', icon: '👑', desc: 'Розблокувати всі інші досягнення', check: () => ACHIEVEMENTS.filter(a => a.id !== 'legend').every(a => a.check()) },
 ];
 
