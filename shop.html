@@ -95,9 +95,9 @@
 
   <div class="grid" id="grid"></div>
 
-  <div class="endgame-panel" id="endgamePanel" style="display:none;">
-    <h2>🏁 Усі теми зібрано!</h2>
-    <p class="endgame-sub">Монетам більше нема на що йти в магазині — тепер їх можна міняти на досвід.</p>
+  <div class="endgame-panel" id="endgamePanel">
+    <h2>🔄 Обмін монет на досвід</h2>
+    <p class="endgame-sub">Монети можна витратити не лише на теми — обміняй їх на XP або на тимчасовий бустер.</p>
     <div class="endgame-cards">
       <div class="endgame-card">
         <div class="ec-icon">🔄</div>
@@ -196,11 +196,6 @@ render();
 
 const BOOST_PRICE = 150;
 
-function hasAllThemes() {
-  const owned = Engine.ThemeManager.getOwned();
-  return Object.keys(Engine.THEMES).every(id => owned.includes(id));
-}
-
 function formatTimer(ms) {
   const total = Math.ceil(ms / 1000);
   const m = Math.floor(total / 60), s = total % 60;
@@ -208,10 +203,6 @@ function formatTimer(ms) {
 }
 
 function paintEndgame() {
-  const panel = document.getElementById('endgamePanel');
-  if (!hasAllThemes()) { panel.style.display = 'none'; return; }
-  panel.style.display = '';
-
   const coins = Engine.CoinBank.get();
 
   const tiersWrap = document.getElementById('exchangeTiers');
