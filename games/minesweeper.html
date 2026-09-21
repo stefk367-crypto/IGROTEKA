@@ -178,9 +178,21 @@ function render() {
       }
       el.addEventListener('click', () => openCell(r, c));
       el.addEventListener('contextmenu', (e) => toggleFlag(r, c, e));
-      let pressTimer;
-      el.addEventListener('touchstart', () => { pressTimer = setTimeout(() => toggleFlag(r, c, {preventDefault(){}}), 450); }, {passive:true});
-      el.addEventListener('touchend', () => clearTimeout(pressTimer));
+      let pressTimer, longPressFired = false;
+      el.addEventListener('touchstart', () => {
+        longPressFired = false;
+        pressTimer = setTimeout(() => {
+          longPressFired = true;
+          toggleFlag(r, c, { preventDefault(){} });
+        }, 450);
+      }, { passive: true });
+      el.addEventListener('touchend', (e) => {
+        clearTimeout(pressTimer);
+        // Без цього після довгого натискання (флажок) браузер одразу
+        // "дошле" звичайний клік — і клітинка відкривається сама собою
+        // одразу після того, як її позначили прапорцем.
+        if (longPressFired) e.preventDefault();
+      });
       boardEl.appendChild(el);
     }
   }
