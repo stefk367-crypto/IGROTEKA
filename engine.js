@@ -155,6 +155,11 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function aabb(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 
+// Каже SupaSync зберегти прогрес найближчим часом (з дебаунсом) —
+// викликається після кожної значущої зміни: монети, XP, покупка теми/рамки.
+// Для гостя (без входу) чи коли Supabase не підключено — просто нічого не робить.
+function pingSync() { if (window.SupaSync) SupaSync.schedulePush(); }
+
 /* ---------- Монети: єдиний гаманець для всього порталу ---------- */
 const CoinBank = {
   KEY_TOTAL: 'koinzal_total_earned',
@@ -175,6 +180,7 @@ const CoinBank = {
   addSilent(amount) {
     const inc = Math.max(0, Math.floor(amount));
     try { localStorage.setItem(this.KEY_TOTAL, this.getTotalEarned() + inc); } catch (e) {}
+    pingSync();
     return this.get();
   },
   add(amount) {
@@ -189,6 +195,7 @@ const CoinBank = {
   spend(amount) {
     if (this.get() < amount) return false;
     try { localStorage.setItem(this.KEY_SPENT, this.getTotalSpent() + amount); } catch (e) {}
+    pingSync();
     return true;
   }
 };
@@ -375,6 +382,7 @@ const LevelManager = {
     const beforeLevel = this.getLevel(before);
     const after = before + inc;
     try { localStorage.setItem(this.KEY_XP, after); } catch (e) {}
+    pingSync();
     const afterLevel = this.getLevel(after);
     let rewardCoins = 0;
     const extras = [];
@@ -597,9 +605,11 @@ const ThemeManager = {
     const owned = this.getOwned();
     if (!owned.includes(id)) owned.push(id);
     try { localStorage.setItem(this.KEY_OWNED, JSON.stringify(owned)); } catch (e) {}
+    pingSync();
   },
   setActive(id) {
     try { localStorage.setItem(this.KEY_ACTIVE, id); } catch (e) {}
+    pingSync();
     this.apply();
   },
   // Метадані теми — шукає як серед звичайних (магазинних), так і серед
@@ -639,9 +649,11 @@ const FrameManager = {
     const owned = this.getOwned();
     if (!owned.includes(id)) owned.push(id);
     try { localStorage.setItem(this.KEY_OWNED, JSON.stringify(owned)); } catch (e) {}
+    pingSync();
   },
   setActive(id) {
     try { localStorage.setItem(this.KEY_ACTIVE, id); } catch (e) {}
+    pingSync();
   }
 };
 

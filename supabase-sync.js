@@ -90,7 +90,7 @@
       if (!supa) { this.ready = true; return; }
       const { data } = await supa.auth.getSession();
       this.user = data && data.session ? data.session.user : null;
-      if (this.user) { await this.pull(); await this.push(); }
+      if (this.user) { this._handleUserSwitch(); await this.pull(); await this.push(); }
       this.ready = true;
       cleanUrlHash();
       window.dispatchEvent(new CustomEvent('supa-auth-change', { detail: this.user }));
@@ -100,10 +100,39 @@
         // Одразу після входу пушимо стан — інакше рядок у public_stats
         // (і, відповідно, у рейтингу) з'являється тільки за 30 сек
         // таймером або коли гравець піде зі сторінки.
-        if (this.user) { await this.pull(); await this.push(); }
+        if (this.user) { this._handleUserSwitch(); await this.pull(); await this.push(); }
         cleanUrlHash();
         window.dispatchEvent(new CustomEvent('supa-auth-change', { detail: this.user }));
       });
+    },
+
+    // Прогрес лежить у localStorage — він спільний для БУДЬ-ЯКОГО акаунта
+    // в цьому браузері. Якщо гравець заходив раніше під ІНШИМ акаунтом,
+    // без цієї перевірки прогрес одного акаунта "перетікав" би в інший
+    // через мердж по максимуму при наступному pull().
+    KEY_LAST_USER: 'koinzal_last_user_id',
+    _handleUserSwitch() {
+      let lastId = null;
+      try { lastId = localStorage.getItem(this.KEY_LAST_USER); } catch (e) {}
+      if (lastId && lastId !== this.user.id) this._clearLocalProgress();
+      try { localStorage.setItem(this.KEY_LAST_USER, this.user.id); } catch (e) {}
+    },
+    _clearLocalProgress() {
+      const explicitKeys = [
+        'snake_best', 'tetris_best', '2048_best', 'flappy_best', 'simon_best', 'pong_wins',
+        'spaceshooter_best', 'minesweeper_wins', 'moles_best', 'memory_best_moves',
+        'arkanoid_won', 'platformer_won', 'puzzle15_solved'
+      ];
+      try {
+        const toRemove = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && (k.startsWith('koinzal_') || explicitKeys.includes(k)) && k !== this.KEY_LAST_USER) {
+            toRemove.push(k);
+          }
+        }
+        toRemove.forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
     },
 
     async signInGoogle() {
@@ -134,6 +163,17 @@
       const snap = snapshotLocal();
       await supa.from('profiles').upsert({ id: this.user.id, data: snap, updated_at: new Date().toISOString() });
       await this.pushPublicStats();
+    },
+
+    // Викликати після будь-якої значущої локальної зміни (монети, XP,
+    // покупка теми/рамки тощо) — зберігає в Supabase за ~1.5 сек, а не
+    // раз на 30 сек чи при закритті вкладки. Кілька викликів поспіль
+    // (наприклад під час швидкої гри) об'єднуються в один запит.
+    _pushTimer: null,
+    schedulePush() {
+      if (!supa || !this.user) return;
+      clearTimeout(this._pushTimer);
+      this._pushTimer = setTimeout(() => this.push(), 1500);
     },
 
     // Окремий публічний "зріз" для лідерборду: нік/аватар з OAuth (не email!)
