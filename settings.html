@@ -67,6 +67,7 @@
   <div class="panel">
     <h2>Статистика</h2>
     <div class="stat-grid">
+      <div class="stat-box"><div class="num" id="statLevel">1</div><div class="lbl">Рівень</div></div>
       <div class="stat-box"><div class="num" id="statCoins">0</div><div class="lbl">Монет зараз</div></div>
       <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl">Зароблено всього</div></div>
       <div class="stat-box"><div class="num" id="statStreak">0</div><div class="lbl">Днів поспіль</div></div>
@@ -76,7 +77,7 @@
 
   <div class="panel">
     <h2>Скинути прогрес</h2>
-    <p class="row-label" style="margin-bottom:14px;">Обнулить монети, теми, рекорди й серію днів. Це незворотно.</p>
+    <p class="row-label" style="margin-bottom:14px;">Обнулить монети, XP, рівень, теми, рамки, рекорди, місії й серію днів. Це незворотно.</p>
     <button class="danger-btn" id="resetBtn">Скинути весь прогрес</button>
   </div>
 </div>
@@ -110,6 +111,7 @@ mutedEl.addEventListener('change', () => {
 });
 
 function refreshStats() {
+  document.getElementById('statLevel').textContent = Engine.LevelManager.getLevel();
   document.getElementById('statCoins').textContent = Engine.CoinBank.get();
   document.getElementById('statTotal').textContent = Engine.CoinBank.getTotalEarned();
   document.getElementById('statStreak').textContent = Engine.DailyBonus.getStreak();
@@ -117,14 +119,26 @@ function refreshStats() {
 }
 refreshStats();
 
+// Ігрові рекорди — окремі ключі поза префіксом "koinzal_", тому чистяться явним списком.
+const GAME_RECORD_KEYS = [
+  'snake_best', 'tetris_best', '2048_best', 'flappy_best', 'simon_best', 'pong_wins',
+  'spaceshooter_best', 'minesweeper_wins', 'moles_best', 'memory_best_moves',
+  'arkanoid_won', 'platformer_won', 'puzzle15_solved',
+  'played_late_night', 'played_early_morning'
+];
+
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (!confirm('Точно скинути весь прогрес? Це незворотно.')) return;
-  const keys = [
-    'koinzal_coins','koinzal_total_earned','koinzal_theme','koinzal_owned_themes',
-    'koinzal_daily_date','koinzal_daily_streak','koinzal_muted','koinzal_volume',
-    'snake_best','flappy_best','simon_best','2048_best'
-  ];
-  keys.forEach(k => { try { localStorage.removeItem(k); } catch(e) {} });
+  if (!confirm('Точно скинути весь прогрес — монети, XP, рівень, теми, рамки, місії, рекорди? Це незворотно.')) return;
+  try {
+    const toRemove = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      // Все, що належить порталу: префікс "koinzal_" (монети, XP, рівень,
+      // теми, рамки, місії, бустер тощо) + явний список рекордів ігор.
+      if (k && (k.startsWith('koinzal_') || GAME_RECORD_KEYS.includes(k))) toRemove.push(k);
+    }
+    toRemove.forEach(k => localStorage.removeItem(k));
+  } catch (e) {}
   toast('Прогрес скинуто');
   setTimeout(() => location.reload(), 900);
 });
