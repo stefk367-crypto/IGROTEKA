@@ -294,7 +294,10 @@ const XpBooster = {
   activate() {
     const now = Date.now();
     const base = Math.max(now, this.getUntil());
-    try { localStorage.setItem(this.KEY_UNTIL, base + this.DURATION_MS); } catch (e) {}
+    try {
+      localStorage.setItem(this.KEY_UNTIL, base + this.DURATION_MS);
+      localStorage.setItem('koinzal_booster_uses', safeNum('koinzal_booster_uses') + 1);
+    } catch (e) {}
   }
 };
 
@@ -309,7 +312,10 @@ const XpExchange = {
   exchange(coins, xp) {
     if (!CoinBank.spend(coins)) return false;
     LevelManager.addXp(xp);
-    try { localStorage.setItem('koinzal_xp_exchange_count', safeNum('koinzal_xp_exchange_count') + 1); } catch (e) {}
+    try {
+      localStorage.setItem('koinzal_xp_exchange_count', safeNum('koinzal_xp_exchange_count') + 1);
+      if (coins >= 1000) localStorage.setItem('koinzal_used_1000_exchange', '1');
+    } catch (e) {}
     return true;
   }
 };
@@ -536,10 +542,17 @@ const DailyMissions = {
       try { localStorage.setItem(this.KEY_CLAIMED, JSON.stringify(Array.from(claimed))); } catch (e) {}
       showToast(toastLines);
     }
-    // Прапорець "хоч раз виконав усі 3 місії за день" — для ачивки
-    // 'perfect_day'. Окремий від денного стану, бо той щодня скидається.
+    // Лічильник "ідеальних днів" (усі 3 місії за день) — для ачивок
+    // 'perfect_day' і 'perfect_week'. Рахуємо один раз за календарний
+    // день, навіть якщо _checkAndClaim викликається кілька разів поспіль.
     if (picked.length && claimed.size >= picked.length) {
-      try { localStorage.setItem('koinzal_missions_perfect_day_ever', '1'); } catch (e) {}
+      try {
+        const countedDate = localStorage.getItem('koinzal_perfect_day_counted_date');
+        if (countedDate !== this.todayStr()) {
+          localStorage.setItem('koinzal_perfect_day_counted_date', this.todayStr());
+          localStorage.setItem('koinzal_perfect_days_count', safeNum('koinzal_perfect_days_count') + 1);
+        }
+      } catch (e) {}
     }
   },
 
@@ -704,7 +717,14 @@ const ACHIEVEMENTS = [
   { id: 'level50',      name: 'Ветеран порталу', icon: '🥈', desc: 'Досягти 50 рівня', check: () => LevelManager.getLevel() >= 50 },
   { id: 'level100',     name: 'Максимальний рівень', icon: '🥇', desc: 'Досягти 100 рівня', check: () => LevelManager.getLevel() >= 100 },
   { id: 'exchanger',    name: 'Оптовий обмін',   icon: '🔄', desc: 'Обміняти монети на XP 10 разів', check: () => safeNum('koinzal_xp_exchange_count') >= 10 },
-  { id: 'perfect_day',  name: 'Ідеальний день',  icon: '📅', desc: 'Виконати всі 3 щоденні місії за один день', check: () => safeNum('koinzal_missions_perfect_day_ever') >= 1 },
+  { id: 'bulk_trader',  name: 'Оптовик',         icon: '💸', desc: 'Обміняти 1000 монет на XP за раз', check: () => safeNum('koinzal_used_1000_exchange') >= 1 },
+  { id: 'boosted',      name: 'Прискорювач',     icon: '⚡', desc: 'Купити XP-бустер хоча б раз', check: () => safeNum('koinzal_booster_uses') >= 1 },
+  { id: 'frame_collector', name: 'Колекціонер рамок', icon: '🖼️', desc: 'Мати 3+ рамки профілю', check: () => FrameManager.getOwned().length >= 3 },
+  { id: 'legendary_frame', name: 'Максимальний стиль', icon: '✨', desc: 'Отримати легендарну рамку (100 рівень)', check: () => FrameManager.getOwned().includes('legendary') },
+  { id: 'exclusive_themes', name: 'Ексклюзивний смак', icon: '🌈', desc: 'Отримати обидві ексклюзивні теми (Аврора і Фенікс)', check: () => ['aurora','phoenix'].every(id => ThemeManager.getOwned().includes(id)) },
+  { id: 'tried_all',    name: 'Спробував усе',   icon: '🎮', desc: 'Зіграти хоча б раунд у кожній з 13 ігор', check: () => { try { return (JSON.parse(localStorage.getItem('koinzal_games_played_ever') || '[]')).length >= 13; } catch (e) { return false; } } },
+  { id: 'perfect_day',  name: 'Ідеальний день',  icon: '📅', desc: 'Виконати всі 3 щоденні місії за один день', check: () => safeNum('koinzal_perfect_days_count') >= 1 },
+  { id: 'perfect_week',  name: 'Тижневий ідеал',  icon: '📆', desc: 'Виконати всі 3 щоденні місії 5 різних днів', check: () => safeNum('koinzal_perfect_days_count') >= 5 },
   { id: 'legend',       name: 'Легенда порталу', icon: '👑', desc: 'Розблокувати всі інші досягнення', check: () => ACHIEVEMENTS.filter(a => a.id !== 'legend').every(a => a.check()) },
 ];
 
@@ -798,7 +818,16 @@ const KNOWN_GAME_IDS = [
 (function registerGameSessionOnLoad() {
   try {
     const pageId = (location.pathname.split('/').pop() || '').replace(/\.html?$/i, '');
-    if (KNOWN_GAME_IDS.includes(pageId)) DailyMissions.registerGameSession(pageId);
+    if (KNOWN_GAME_IDS.includes(pageId)) {
+      DailyMissions.registerGameSession(pageId);
+      // Окремий довічний список зіграних ігор — на відміну від денного
+      // прогресу місій, ніколи не скидається. Потрібен для ачивки 'tried_all'.
+      const played = JSON.parse(localStorage.getItem('koinzal_games_played_ever') || '[]');
+      if (!played.includes(pageId)) {
+        played.push(pageId);
+        localStorage.setItem('koinzal_games_played_ever', JSON.stringify(played));
+      }
+    }
   } catch (e) {}
 })();
 
