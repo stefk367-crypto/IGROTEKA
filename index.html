@@ -78,8 +78,13 @@
     font-size: 13px;
     padding: 11px 20px;
     border-radius: 999px;
+    position: relative;
   }
   .shop-link:hover { filter: brightness(1.06); }
+  .new-reward-dot {
+    position: absolute; top: -3px; right: -3px; width: 12px; height: 12px;
+    border-radius: 50%; background: #ef3b5a; border: 2px solid var(--bg, #0d1a18);
+  }
 
   .daily-banner {
     margin-top: 20px; display: inline-flex; align-items: center; gap: 12px;
@@ -268,7 +273,7 @@
     <p class="subtitle">Візьми будь-яку коробку з полиці й грай прямо в браузері — без завантажень, без реклами.</p>
     <a href="shop.html" class="shop-link">🛒 Магазин тем</a>
     <a href="achievements.html" class="shop-link" style="background: var(--cyan);">🏆 Досягнення</a>
-    <a href="profile.html" class="shop-link" style="background: var(--magenta); color: var(--text);">👤 Профіль</a>
+    <a href="profile.html" id="profileNavLink" class="shop-link" style="background: var(--magenta); color: var(--text);">👤 Профіль</a>
     <a href="leaderboard.html" class="shop-link" style="background: var(--yellow); color: #2c2008;">🏅 Рейтинг</a>
     <a href="settings.html" class="shop-link" style="background: var(--bg-panel-raised); color: var(--text);">⚙️ Налаштування</a>
     <div id="dailyBanner"></div>
@@ -549,6 +554,13 @@
 <script src="engine.js"></script>
 <script>
 Engine.mountCoinBadge(document.body, '');
+
+if (Engine.RewardsBadge.hasUnseen()) {
+  const link = document.getElementById('profileNavLink');
+  const dot = document.createElement('span');
+  dot.className = 'new-reward-dot';
+  link.appendChild(dot);
+}
 mountAuthWidget(document.getElementById('dailyBanner').parentElement);
 
 (function() {

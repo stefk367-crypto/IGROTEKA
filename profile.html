@@ -391,6 +391,10 @@ function buildSkinsGrid() {
 }
 buildSkinsGrid();
 
+// Позначаємо всі поточні досягнення/теми/рамки як "переглянуті" —
+// значок нових нагород на кнопці "Профіль" на головній зникне.
+Engine.RewardsBadge.markSeen();
+
 (function setupLevelModal() {
   const overlay = document.getElementById('levelModal');
   const card = document.getElementById('levelCard');

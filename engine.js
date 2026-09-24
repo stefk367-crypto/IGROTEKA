@@ -914,4 +914,22 @@ function mountFullscreenButton(container) {
   } catch (e) {}
 })();
 
-window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange };
+/* ---------- Значок нових нагород: чи з'явилось щось нове (ачивка,
+   тема, рамка) відтоді, як гравець востаннє відкривав профіль. ---------- */
+const RewardsBadge = {
+  KEY_SEEN: 'koinzal_rewards_seen',
+  _snapshotCount() {
+    return Achievements.unlocked().length + FrameManager.getOwned().length + ThemeManager.getOwned().length;
+  },
+  hasUnseen() {
+    let seen = 0;
+    try { seen = Number(localStorage.getItem(this.KEY_SEEN) || 0); } catch (e) {}
+    return this._snapshotCount() > seen;
+  },
+  // Викликати на сторінці профілю — позначає все поточне як "переглянуте".
+  markSeen() {
+    try { localStorage.setItem(this.KEY_SEEN, this._snapshotCount()); } catch (e) {}
+  }
+};
+
+window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge };
