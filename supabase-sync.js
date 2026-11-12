@@ -237,7 +237,8 @@
     function paint() {
       const u = SupaSync.user;
       if (u) {
-        const label = u.email || (u.user_metadata && u.user_metadata.user_name) || 'Профіль';
+        const rawLabel = u.email || (u.user_metadata && u.user_metadata.user_name) || 'Профіль';
+        const label = (window.Engine && Engine.escapeHtml) ? Engine.escapeHtml(rawLabel) : rawLabel;
         wrap.innerHTML = `<span style="font-family:var(--font-display);font-weight:700;font-size:12.5px;color:var(--text-dim);">${label}</span>
           <button id="authOut" style="font-family:var(--font-display);font-weight:700;font-size:12px;padding:8px 12px;background:var(--bg-panel-raised);color:var(--text);border:1px solid var(--line);border-radius:8px;cursor:pointer;">Вийти</button>`;
         wrap.querySelector('#authOut').onclick = () => SupaSync.signOut();

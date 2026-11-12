@@ -155,6 +155,23 @@ function lerp(a, b, t) { return a + (b - a) * t; }
 function clamp(v, min, max) { return Math.max(min, Math.min(max, v)); }
 function aabb(a, b) { return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y; }
 
+// Екранування тексту, що приходить з OAuth-профілю гравця (ім'я, нік) перед
+// вставкою через innerHTML — без цього гравець міг би вписати <img onerror=...>
+// у своє ім'я на GitHub/Google і виконати код у БУДЬ-КОГО, хто відкриє рейтинг
+// чи його профіль (stored XSS через public_stats, який читають усі).
+function escapeHtml(str) {
+  return String(str == null ? '' : str).replace(/[&<>"']/g, (c) => ({
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+  }[c]));
+}
+// Безпечний <img> для аватарки, яка теж приходить з OAuth-профілю. Дозволяємо
+// лише http(s)-посилання (блокуємо javascript:, data:, і будь-яку розмітку),
+// і завжди екрануємо саме значення атрибута src.
+function safeAvatarImg(url) {
+  if (!url || !/^https?:\/\//i.test(String(url))) return '';
+  return `<img src="${escapeHtml(url)}" alt="">`;
+}
+
 // Каже SupaSync зберегти прогрес найближчим часом (з дебаунсом) —
 // викликається після кожної значущої зміни: монети, XP, покупка теми/рамки.
 // Для гостя (без входу) чи коли Supabase не підключено — просто нічого не робить.
@@ -932,4 +949,4 @@ const RewardsBadge = {
   }
 };
 
-window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge };
+window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, escapeHtml, safeAvatarImg, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge };
