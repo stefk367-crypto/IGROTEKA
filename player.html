@@ -102,9 +102,9 @@ async function waitForSupaReady(timeoutMs) {
 
   content.innerHTML = `
     <div class="panel p-head">
-      <div class="p-avatar">${p.avatar_url ? `<img src="${p.avatar_url}" alt="">` : '👤'}</div>
+      <div class="p-avatar">${Engine.safeAvatarImg(p.avatar_url) || '👤'}</div>
       <div>
-        <div class="p-name">${p.name || 'Гравець'}</div>
+        <div class="p-name">${Engine.escapeHtml(p.name || 'Гравець')}</div>
         <div class="p-level">${rank.icon} ${rank.name} · рівень ${p.level}</div>
       </div>
     </div>

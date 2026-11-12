@@ -91,12 +91,12 @@ async function waitForSupaReady(timeoutMs) {
   board.innerHTML = rows.map((r, i) => {
     const rank = i + 1;
     const rankCls = rank === 1 ? 'top1' : rank === 2 ? 'top2' : rank === 3 ? 'top3' : '';
-    const avatar = r.avatar_url ? `<img src="${r.avatar_url}" alt="">` : '👤';
-    return `<div class="row ${r.id === myId ? 'me' : ''}" data-id="${r.id}">
+    const avatar = Engine.safeAvatarImg(r.avatar_url) || '👤';
+    return `<div class="row ${r.id === myId ? 'me' : ''}" data-id="${Engine.escapeHtml(r.id)}">
       <div class="rank ${rankCls}">${rank}</div>
       <div class="row-avatar">${avatar}</div>
       <div class="row-info">
-        <div class="row-name">${r.name || 'Гравець'}</div>
+        <div class="row-name">${Engine.escapeHtml(r.name || 'Гравець')}</div>
         <div class="row-sub">🏆 ${r.achievements || 0} досягнень</div>
       </div>
       <div class="row-level"><small>рівень</small>${r.level}</div>

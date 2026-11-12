@@ -250,9 +250,9 @@ function paintIdentity() {
     const providerLabel = provider === 'google' ? 'Google' : provider === 'github' ? 'GitHub' : '';
 
     card.innerHTML = `
-      <div class="identity-avatar">${avatar ? `<img src="${avatar}" alt="">` : '👤'}</div>
+      <div class="identity-avatar">${Engine.safeAvatarImg(avatar) || '👤'}</div>
       <div>
-        <div class="identity-name">${name}</div>
+        <div class="identity-name">${Engine.escapeHtml(name)}</div>
         <div class="identity-provider">${providerLabel ? `Увійшов через ${providerLabel}` : u.email || ''}</div>
       </div>
       <button class="identity-btn" id="identityLogout">Вийти</button>
