@@ -50,6 +50,9 @@
   <p class="hint">Клікай по кротах, поки вони не сховались. 30 секунд на максимальний рахунок.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const boardEl = document.getElementById('board');
@@ -130,7 +133,8 @@ function endGame() {
   clearInterval(gameTimer);
   sound.win();
   const earned = Math.max(1, score);
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('moles', { score }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   let best = 0;
   try { best = Number(localStorage.getItem('moles_best') || 0); } catch (e) {}
   if (score > best) { try { localStorage.setItem('moles_best', score); } catch (e) {} }

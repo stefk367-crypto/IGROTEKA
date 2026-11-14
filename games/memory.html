@@ -49,6 +49,9 @@
   <p class="hint">Клікай по картках, знаходь пари однакових символів. Менше спроб — краще.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const boardEl = document.getElementById('board');
@@ -133,7 +136,8 @@ function checkWin() {
   if (pairsFound === ICONS.length) {
     sound.win();
     const earned = Math.max(5, 60 - moves * 2);
-    Engine.CoinBank.add(earned);
+    (window.SupaSync ? SupaSync.submitGameResult('memory', { moves }) : Promise.resolve(null))
+      .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
     let best = 0;
     try { best = Number(localStorage.getItem('memory_best_moves') || 0); } catch (e) {}
     if (!best || moves < best) { try { localStorage.setItem('memory_best_moves', moves); } catch (e) {} }

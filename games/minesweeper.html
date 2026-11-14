@@ -53,6 +53,9 @@
   <p class="hint">Клік — відкрити клітинку. Правий клік (або довге натискання) — поставити прапорець.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const boardEl = document.getElementById('board');
@@ -151,7 +154,8 @@ function endGame(won) {
   if (won) {
     sound.win();
     const earned = Math.max(10, 100 - seconds);
-    Engine.CoinBank.add(earned);
+    (window.SupaSync ? SupaSync.submitGameResult('minesweeper', { won: true, seconds }) : Promise.resolve(null))
+      .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
     let wins = 0;
     try { wins = Number(localStorage.getItem('minesweeper_wins') || 0); } catch (e) {}
     try { localStorage.setItem('minesweeper_wins', wins + 1); } catch (e) {}

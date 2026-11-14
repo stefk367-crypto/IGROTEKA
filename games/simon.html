@@ -66,6 +66,9 @@
   <p class="hint">Запам'ятовуй послідовність, що показує гра, і повторюй її клікаючи по секторах.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const sound = new Engine.SoundFX();
@@ -146,7 +149,8 @@ function fail() {
     document.getElementById('best').textContent = 'РЕКОРД: ' + best;
   }
   const earned = Math.max(1, finalRound * 4);
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('simon', { round: finalRound }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   msgEl.textContent = `ПОМИЛКА НА РАУНДІ ${round} · +${earned} монет`;
   centerBtn.textContent = 'ЩЕ РАЗ';
 }

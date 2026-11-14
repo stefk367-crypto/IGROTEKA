@@ -163,6 +163,9 @@
   <p class="hint">◂ ▸ рух · ▲ / пробіл поворот · ▼ м'яке падіння · Enter/Shift+↓ миттєве падіння · C — утримати фігуру</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const ctx = document.getElementById('board').getContext('2d');
@@ -408,7 +411,8 @@ function gameOver() {
   try { best = Number(localStorage.getItem('tetris_best') || 0); } catch (e) {}
   if (score > best) { try { localStorage.setItem('tetris_best', score); } catch (e) {} }
   const earned = Math.max(1, Math.floor(score / 100));
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('tetris', { score }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = '▸ ЗІГРАТИ ЩЕ РАЗ';
   render();

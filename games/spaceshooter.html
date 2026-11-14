@@ -55,6 +55,9 @@
   <p class="hint">◂ ▸ або A/D — рух, пробіл — вогонь (або авто на телефоні). Збивай астероїди, уникай зіткнень.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const canvas = document.getElementById('board');
@@ -187,7 +190,8 @@ function gameOver() {
   loop.stop();
   sound.gameOver();
   const earned = Math.max(1, Math.floor(score / 8));
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('spaceshooter', { score }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   let best = 0;
   try { best = Number(localStorage.getItem('spaceshooter_best') || 0); } catch (e) {}
   if (score > best) { try { localStorage.setItem('spaceshooter_best', score); } catch (e) {} }

@@ -60,6 +60,9 @@
   <p class="hint">Керування: ◂ ▸ або A/D, або рухай мишею. Пробіл — запустити м'яч. Розбий усі цеглинки.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const canvas = document.getElementById('board');
@@ -224,7 +227,8 @@ function winLevel() {
   loop.stop();
   sound.win();
   const earned = Math.floor(score / 10) + 20;
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('arkanoid', { won: true, score }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   msgEl.textContent = 'ПЕРЕМОГА! УСІ ЦЕГЛИНКИ РОЗБИТО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = 'Зіграти ще раз';
   try { localStorage.setItem('arkanoid_won', '1'); } catch (e) {}
@@ -235,7 +239,8 @@ function gameOver() {
   loop.stop();
   sound.gameOver();
   const earned = Math.max(1, Math.floor(score / 10));
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('arkanoid', { won: false, score }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   msgEl.textContent = 'ГРУ ЗАВЕРШЕНО — РАХУНОК ' + score + ' · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = 'Спробувати ще раз';
 }

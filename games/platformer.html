@@ -120,6 +120,9 @@
   <p class="hint">Керування: ◂ ▸ або A D — рух, пробіл або W — стрибок (утримуй довше — вищий стрибок). Збери всі монети, уникай падіння в прірву.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const canvas = document.getElementById('board');
@@ -330,7 +333,8 @@ function winGame() {
   loop.stop();
   sound.win();
   const earned = coins.length * 3 + 20;
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('platformer', { won: true }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   document.getElementById('msg').textContent = 'ПЕРЕМОГА! УСІ МОНЕТИ ЗІБРАНО · +' + earned + ' монет порталу';
   document.getElementById('startBtn').textContent = '▸ ЗІГРАТИ ЩЕ РАЗ';
   try { localStorage.setItem('platformer_won', '1'); } catch (e) {}
@@ -341,7 +345,8 @@ function gameOver() {
   loop.stop();
   sound.gameOver();
   const earned = Math.max(1, collected * 2);
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('platformer', { won: false, collected }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   document.getElementById('msg').textContent = 'ГРУ ЗАВЕРШЕНО — ЖИТТЯ СКІНЧИЛИСЬ · +' + earned + ' монет';
   document.getElementById('startBtn').textContent = '▸ СПРОБУВАТИ ЩЕ РАЗ';
 }

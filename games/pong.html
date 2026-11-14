@@ -64,6 +64,9 @@
   <p class="hint">Керування: стрілки ▲▼ або W/S, або рухай мишею над полем. Перший до 7 очок перемагає.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const canvas = document.getElementById('board');
@@ -201,7 +204,8 @@ function endGame(won) {
     earned = Math.max(1, p1.score * 2);
     msgEl.textContent = 'ПОРАЗКА — КОМП\u2019ЮТЕР ВИЯВИВСЯ СПРИТНІШИМ · +' + earned + ' монет';
   }
-  Engine.CoinBank.add(earned);
+  (window.SupaSync ? SupaSync.submitGameResult('pong', { won, score: p1.score }) : Promise.resolve(null))
+    .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
   document.getElementById('startBtn').textContent = 'Зіграти ще раз';
 }
 

@@ -51,6 +51,9 @@
   <p class="hint">Клікай на плитку поруч з порожньою клітинкою, щоб пересунути її. Зберись 1→15 по рядках.</p>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="../config.js"></script>
+<script src="../supabase-sync.js"></script>
 <script src="../engine.js"></script>
 <script>
 const boardEl = document.getElementById('board');
@@ -124,7 +127,8 @@ function checkWin() {
     running = false;
     sound.win();
     const earned = Math.max(10, 120 - moves);
-    Engine.CoinBank.add(earned);
+    (window.SupaSync ? SupaSync.submitGameResult('puzzle15', { moves }) : Promise.resolve(null))
+      .then(confirmed => Engine.CoinBank.add(confirmed != null ? confirmed : earned));
     try { localStorage.setItem('puzzle15_solved', '1'); } catch (e) {}
     document.getElementById('msg').textContent = `ЗІБРАНО ЗА ${moves} ХОДІВ · +${earned} монет`;
   }
