@@ -206,6 +206,41 @@
       } catch (e) { console.error('[koinzal] pushPublicStats threw:', e); }
     },
 
+    // Надсилає СИРІ результати раунду (score/moves/round/won) на Edge Function
+    // award-game-result, яка сама — на сервері — рахує нагороду за формулою
+    // гри і сама пише її в базу. Це замінює клієнтське обчислення "earned":
+    // консольний читер більше не може просто підсунути своє число монет,
+    // бо клієнт більше не вирішує, скільки монет дати.
+    // Повертає підтверджену сервером кількість монет, або null якщо
+    // офлайн/не залогінений/помилка мережі — тоді виклик на боці гри сам
+    // підставляє локально пораховане значення як запасний варіант.
+    async submitGameResult(game, metrics) {
+      if (!supa || !this.user) return null;
+      try {
+        const { data: { session } } = await supa.auth.getSession();
+        if (!session) return null;
+        const resp = await fetch(SUPA_URL + '/functions/v1/award-game-result', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer ' + session.access_token,
+            'apikey': SUPA_KEY
+          },
+          body: JSON.stringify({ game, metrics })
+        });
+        if (!resp.ok) { console.warn('[koinzal] award-game-result failed:', resp.status); return null; }
+        const json = await resp.json();
+        if (typeof json.earned !== 'number') return null;
+        // синхронізуємо локальний кеш, щоб наступний звичайний push() не
+        // "перезаписав" авторитетне серверне число застарілим локальним
+        this.schedulePush();
+        return json.earned;
+      } catch (e) {
+        console.warn('[koinzal] award-game-result threw:', e);
+        return null;
+      }
+    },
+
     // Топ гравців за рівнем (тайбрейк — XP). Публічний запит, працює й без входу.
     async fetchLeaderboard(limit) {
       if (!supa) return [];
