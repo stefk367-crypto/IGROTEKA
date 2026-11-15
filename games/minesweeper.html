@@ -32,12 +32,6 @@
   .cell.open { background: var(--paper); color: var(--ink); cursor: default; }
   .cell.mine { background: var(--magenta); }
   .cell.flag { color: var(--yellow); }
-  .board.just-reset { animation: boardResetFlash 0.45s ease; }
-  @keyframes boardResetFlash {
-    0% { transform: scale(0.96); opacity: 0.4; }
-    60% { transform: scale(1.015); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
   .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 18px; min-height: 22px; }
   .btn {
     font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
@@ -107,12 +101,17 @@ function reset() {
   clearInterval(timer);
   document.getElementById('mines').textContent = 'МІНИ: ' + (MINES - flagsUsed);
   document.getElementById('timer').textContent = 'ЧАС: 0с';
-  document.getElementById('msg').textContent = 'НОВА ГРА!';
-  setTimeout(() => { if (document.getElementById('msg').textContent === 'НОВА ГРА!') document.getElementById('msg').textContent = ''; }, 900);
-  boardEl.classList.remove('just-reset');
-  void boardEl.offsetWidth;
-  boardEl.classList.add('just-reset');
+  document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
   render();
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  clearInterval(timer);
+  document.getElementById('msg').textContent = 'ГРА ЗУПИНЕНА';
+  document.getElementById('startBtn').textContent = 'Нова гра';
 }
 
 function startTimer() {
@@ -165,6 +164,7 @@ function toggleFlag(r, c, e) {
 function endGame(won) {
   running = false;
   clearInterval(timer);
+  document.getElementById('startBtn').textContent = 'Нова гра';
   for (let r=0;r<ROWS;r++) for (let c=0;c<COLS;c++) if (grid[r][c].mine) grid[r][c].open = true;
   if (won) {
     sound.win();
@@ -217,7 +217,7 @@ function render() {
   }
 }
 
-document.getElementById('startBtn').addEventListener('click', reset);
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
 reset();
 </script>

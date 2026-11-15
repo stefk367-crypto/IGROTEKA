@@ -31,12 +31,6 @@
   }
   .card.flipped { background: var(--paper); transform: scale(1.04); }
   .card.matched { background: var(--paper-alt); opacity: 0.55; cursor: default; }
-  .board.just-reset { animation: boardResetFlash 0.45s ease; }
-  @keyframes boardResetFlash {
-    0% { transform: scale(0.96); opacity: 0.4; }
-    60% { transform: scale(1.015); opacity: 1; }
-    100% { transform: scale(1); opacity: 1; }
-  }
   .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 18px; min-height: 22px; }
   .btn {
     font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
@@ -74,7 +68,7 @@ Engine.mountCoinBadge(document.body, '../');
 
 const ICONS = ['🐸','🍄','🌵','🐙','🍒','⚡','🎈','🧩'];
 
-let cards, flippedIdx, moves, pairsFound, locked;
+let cards, flippedIdx, moves, pairsFound, locked, running;
 
 function shuffle(arr) {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -91,14 +85,20 @@ function reset() {
   moves = 0;
   pairsFound = 0;
   locked = false;
+  running = true;
   document.getElementById('moves').textContent = 'СПРОБИ: 0';
   document.getElementById('pairs').textContent = 'ПАРИ: 0 / 8';
-  document.getElementById('msg').textContent = 'НОВА ГРА!';
-  setTimeout(() => { if (document.getElementById('msg').textContent === 'НОВА ГРА!') document.getElementById('msg').textContent = ''; }, 900);
-  boardEl.classList.remove('just-reset');
-  void boardEl.offsetWidth;
-  boardEl.classList.add('just-reset');
+  document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
   renderBoard();
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  locked = true;
+  document.getElementById('msg').textContent = 'ГРА ЗУПИНЕНА';
+  document.getElementById('startBtn').textContent = 'Нова гра';
 }
 
 function renderBoard() {
@@ -113,7 +113,7 @@ function renderBoard() {
 }
 
 function onCardClick(i) {
-  if (locked) return;
+  if (locked || !running) return;
   const card = cards[i];
   if (card.flipped || card.matched) return;
 
@@ -149,6 +149,8 @@ function onCardClick(i) {
 
 function checkWin() {
   if (pairsFound === ICONS.length) {
+    running = false;
+    document.getElementById('startBtn').textContent = 'Нова гра';
     sound.win();
     const earned = Math.max(5, 60 - moves * 2);
     (window.SupaSync ? SupaSync.submitGameResult('memory', { moves }) : Promise.resolve(null))
@@ -160,7 +162,7 @@ function checkWin() {
   }
 }
 
-document.getElementById('startBtn').addEventListener('click', reset);
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
 reset();
 </script>

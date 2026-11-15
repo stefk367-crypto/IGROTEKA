@@ -122,7 +122,7 @@ function hit(i) {
 function start() {
   reset();
   running = true;
-  document.getElementById('startBtn').textContent = 'Рестарт';
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
   clearInterval(spawnTimer); clearInterval(gameTimer);
   spawnTimer = setInterval(popRandom, 550);
   gameTimer = setInterval(() => {
@@ -130,6 +130,16 @@ function start() {
     document.getElementById('timeLeft').textContent = 'ЧАС: ' + timeLeft + 'с';
     if (timeLeft <= 0) endGame();
   }, 1000);
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  clearInterval(spawnTimer);
+  clearInterval(gameTimer);
+  document.getElementById('msg').textContent = 'ГРА ЗУПИНЕНА';
+  document.getElementById('startBtn').textContent = 'Рестарт';
+  Array.from(boardEl.children).forEach(el => el.classList.remove('up'));
 }
 
 function endGame() {
@@ -147,7 +157,7 @@ function endGame() {
   Array.from(boardEl.children).forEach(el => el.classList.remove('up'));
 }
 
-document.getElementById('startBtn').addEventListener('click', start);
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else start(); });
 
 reset();
 </script>

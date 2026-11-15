@@ -117,7 +117,15 @@ function reset() {
   document.getElementById('msg').textContent = '';
   spawnTile(); spawnTile();
   running = true;
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
   render();
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  document.getElementById('msg').textContent = 'ГРА ЗУПИНЕНА';
+  document.getElementById('startBtn').textContent = 'Нова гра';
 }
 
 function cellCenter(r, c) { return { x: c*CELL + CELL/2, y: r*CELL + CELL/2 }; }
@@ -213,6 +221,7 @@ function checkGameState() {
   }
   if (!hasMoves()) {
     running = false;
+    document.getElementById('startBtn').textContent = 'Нова гра';
     sound.gameOver();
     const earned = Math.max(1, Math.floor(score / 50));
     (window.SupaSync ? SupaSync.submitGameResult('2048', { score }) : Promise.resolve(null))
@@ -290,7 +299,7 @@ canvas.addEventListener('touchend', e => {
   touchStart = null;
 }, { passive: true });
 
-document.getElementById('startBtn').addEventListener('click', reset);
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
 reset();
 </script>

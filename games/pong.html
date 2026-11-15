@@ -246,10 +246,18 @@ function start() {
   if (loop) loop.stop();
   loop = new Engine.Loop(update, render);
   loop.start();
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  loop.stop();
+  msgEl.textContent = 'ГРА ЗУПИНЕНА';
   document.getElementById('startBtn').textContent = 'Рестарт';
 }
 
-document.getElementById('startBtn').addEventListener('click', start);
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else start(); });
 
 reset(1);
 render();

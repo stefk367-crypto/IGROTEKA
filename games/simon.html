@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+  <link rel="icon" href="../icons/favicon.ico" sizes="any">
+  <link rel="icon" href="../icons/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="../icons/favicon-16.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="../icons/apple-touch-icon.png">
+
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Саймон — ІГРОТЕКА</title>
@@ -105,6 +110,15 @@ async function playSequence() {
   }
   accepting = true;
   playerStep = 0;
+  centerBtn.textContent = '⏹ СТОП';
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  accepting = false;
+  msgEl.textContent = 'ГРА ЗУПИНЕНА';
+  centerBtn.textContent = 'СТАРТ';
 }
 
 function nextRound() {
@@ -156,7 +170,7 @@ function fail() {
 }
 
 quads.forEach(q => q.addEventListener('click', () => onQuadClick(Number(q.dataset.i))));
-centerBtn.addEventListener('click', () => { if (!running) start(); });
+centerBtn.addEventListener('click', () => { if (running) stopGame(); else start(); });
 </script>
 </body>
 </html>

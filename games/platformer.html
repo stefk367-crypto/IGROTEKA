@@ -420,13 +420,21 @@ function render() {
 function start() {
   reset();
   running = true;
-  document.getElementById('startBtn').textContent = '▸ РЕСТАРТ';
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
   if (loop) loop.stop();
   loop = new Engine.Loop(update, render);
   loop.start();
 }
 
-document.getElementById('startBtn').addEventListener('click', start);
+function stopGame() {
+  if (!running) return;
+  running = false;
+  loop.stop();
+  document.getElementById('msg').textContent = 'ГРА ЗУПИНЕНА';
+  document.getElementById('startBtn').textContent = '▸ РЕСТАРТ';
+}
+
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else start(); });
 
 reset();
 render();

@@ -104,13 +104,23 @@ function validMoves(blankIdx) {
   return out;
 }
 
+const startBtnLabel = document.getElementById('startBtn').textContent;
+
 function reset() {
   tiles = shuffle();
   moves = 0;
   running = true;
   document.getElementById('moves').textContent = 'ХОДИ: 0';
   document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = '⏹ Стоп';
   render();
+}
+
+function stopGame() {
+  if (!running) return;
+  running = false;
+  document.getElementById('msg').textContent = 'ГРА ЗУПИНЕНА';
+  document.getElementById('startBtn').textContent = startBtnLabel;
 }
 
 function tileClick(idx) {
@@ -130,6 +140,7 @@ function checkWin() {
   const solved = solvedOrder();
   if (tiles.every((v, i) => v === solved[i])) {
     running = false;
+    document.getElementById('startBtn').textContent = startBtnLabel;
     sound.win();
     const earned = Math.max(10, 120 - moves);
     (window.SupaSync ? SupaSync.submitGameResult('puzzle15', { moves }) : Promise.resolve(null))
@@ -156,7 +167,7 @@ function render() {
   });
 }
 
-document.getElementById('startBtn').addEventListener('click', reset);
+document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
 reset();
 </script>
