@@ -162,9 +162,24 @@ function checkWin() {
   }
 }
 
+function initIdle() {
+  const deck = shuffle([...ICONS, ...ICONS].map((icon, i) => ({ icon, id: i, flipped: false, matched: false })));
+  cards = deck;
+  flippedIdx = [];
+  moves = 0;
+  pairsFound = 0;
+  locked = true;
+  running = false;
+  document.getElementById('moves').textContent = 'СПРОБИ: 0';
+  document.getElementById('pairs').textContent = 'ПАРИ: 0 / 8';
+  document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = 'Нова гра';
+  renderBoard();
+}
+
 document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
-reset();
+initIdle();
 </script>
 </body>
 </html>

@@ -299,9 +299,21 @@ canvas.addEventListener('touchend', e => {
   touchStart = null;
 }, { passive: true });
 
+function initIdle() {
+  grid = emptyGrid();
+  score = 0;
+  wonAnnounced = false;
+  anims = [];
+  running = false;
+  document.getElementById('score').textContent = 0;
+  document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = 'Нова гра';
+  render();
+}
+
 document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
-reset();
+initIdle();
 </script>
 </body>
 </html>

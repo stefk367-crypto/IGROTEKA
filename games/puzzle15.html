@@ -167,9 +167,19 @@ function render() {
   });
 }
 
+function initIdle() {
+  tiles = solvedOrder();
+  moves = 0;
+  running = false;
+  document.getElementById('moves').textContent = 'ХОДИ: 0';
+  document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = startBtnLabel;
+  render();
+}
+
 document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
-reset();
+initIdle();
 </script>
 </body>
 </html>

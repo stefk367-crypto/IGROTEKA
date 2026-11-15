@@ -217,9 +217,24 @@ function render() {
   }
 }
 
+function initIdle() {
+  grid = buildGrid();
+  revealedCount = 0;
+  flagsUsed = 0;
+  running = false;
+  started = false;
+  seconds = 0;
+  clearInterval(timer);
+  document.getElementById('mines').textContent = 'МІНИ: ' + MINES;
+  document.getElementById('timer').textContent = 'ЧАС: 0с';
+  document.getElementById('msg').textContent = '';
+  document.getElementById('startBtn').textContent = 'Нова гра';
+  render();
+}
+
 document.getElementById('startBtn').addEventListener('click', () => { if (running) stopGame(); else reset(); });
 
-reset();
+initIdle();
 </script>
 </body>
 </html>
