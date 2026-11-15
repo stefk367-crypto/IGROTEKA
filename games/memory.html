@@ -31,6 +31,12 @@
   }
   .card.flipped { background: var(--paper); transform: scale(1.04); }
   .card.matched { background: var(--paper-alt); opacity: 0.55; cursor: default; }
+  .board.just-reset { animation: boardResetFlash 0.45s ease; }
+  @keyframes boardResetFlash {
+    0% { transform: scale(0.96); opacity: 0.4; }
+    60% { transform: scale(1.015); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
   .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 18px; min-height: 22px; }
   .btn {
     font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
@@ -87,7 +93,11 @@ function reset() {
   locked = false;
   document.getElementById('moves').textContent = 'СПРОБИ: 0';
   document.getElementById('pairs').textContent = 'ПАРИ: 0 / 8';
-  document.getElementById('msg').textContent = '';
+  document.getElementById('msg').textContent = 'НОВА ГРА!';
+  setTimeout(() => { if (document.getElementById('msg').textContent === 'НОВА ГРА!') document.getElementById('msg').textContent = ''; }, 900);
+  boardEl.classList.remove('just-reset');
+  void boardEl.offsetWidth;
+  boardEl.classList.add('just-reset');
   renderBoard();
 }
 

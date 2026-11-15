@@ -32,6 +32,12 @@
   .cell.open { background: var(--paper); color: var(--ink); cursor: default; }
   .cell.mine { background: var(--magenta); }
   .cell.flag { color: var(--yellow); }
+  .board.just-reset { animation: boardResetFlash 0.45s ease; }
+  @keyframes boardResetFlash {
+    0% { transform: scale(0.96); opacity: 0.4; }
+    60% { transform: scale(1.015); opacity: 1; }
+    100% { transform: scale(1); opacity: 1; }
+  }
   .overlay-msg { font-family: var(--font-display); font-weight: 700; font-size: 15px; color: var(--yellow); margin-top: 18px; min-height: 22px; }
   .btn {
     font-family: var(--font-display); font-weight: 700; font-size: 13px; padding: 11px 18px;
@@ -101,7 +107,11 @@ function reset() {
   clearInterval(timer);
   document.getElementById('mines').textContent = 'МІНИ: ' + (MINES - flagsUsed);
   document.getElementById('timer').textContent = 'ЧАС: 0с';
-  document.getElementById('msg').textContent = '';
+  document.getElementById('msg').textContent = 'НОВА ГРА!';
+  setTimeout(() => { if (document.getElementById('msg').textContent === 'НОВА ГРА!') document.getElementById('msg').textContent = ''; }, 900);
+  boardEl.classList.remove('just-reset');
+  void boardEl.offsetWidth;
+  boardEl.classList.add('just-reset');
   render();
 }
 
