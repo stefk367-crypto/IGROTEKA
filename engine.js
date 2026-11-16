@@ -949,4 +949,29 @@ const RewardsBadge = {
   }
 };
 
-window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, escapeHtml, safeAvatarImg, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge };
+// Облік сумарного часу, проведеного на сайті (за всі сесії).
+// Рахуємо реальний "активний" час — тільки поки вкладка видима,
+// щоб відкрита у фоні вкладка не накручувала час даремно.
+const PlayTime = {
+  KEY: 'koinzal_total_playtime_seconds',
+  getTotalSeconds() { return safeNum(this.KEY); },
+  add(seconds) {
+    try { localStorage.setItem(this.KEY, safeNum(this.KEY) + seconds); } catch (e) {}
+  },
+  formatted() {
+    const total = this.getTotalSeconds();
+    const h = Math.floor(total / 3600);
+    const m = Math.floor((total % 3600) / 60);
+    if (h > 0) return `${h} год ${m} хв`;
+    if (m > 0) return `${m} хв`;
+    return `${total} с`;
+  }
+};
+(function trackPlaytime() {
+  const TICK_SECONDS = 5;
+  setInterval(() => {
+    if (document.visibilityState === 'visible') PlayTime.add(TICK_SECONDS);
+  }, TICK_SECONDS * 1000);
+})();
+
+window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, escapeHtml, safeAvatarImg, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge, PlayTime };

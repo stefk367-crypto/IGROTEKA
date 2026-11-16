@@ -306,7 +306,7 @@ function paintFrame() {
 
 function paintRingAvatar() {
   const avatar = getAvatarUrl();
-  document.getElementById('ringAvatar').innerHTML = avatar ? `<img src="${avatar}" alt="">` : '👤';
+  document.getElementById('ringAvatar').innerHTML = Engine.safeAvatarImg(avatar) || '👤';
 }
 
 (function paintLevel() {
@@ -461,7 +461,8 @@ Engine.RewardsBadge.markSeen();
     { num: Engine.CoinBank.getTotalEarned(), label: 'Зароблено за весь час' },
     { num: `${unlocked}/${total}`, label: 'Досягнення' },
     { num: `${owned}/${themesTotal}`, label: 'Тем зібрано' },
-    { num: streak, label: 'Серія входів, дн.' }
+    { num: streak, label: 'Серія входів, дн.' },
+    { num: Engine.PlayTime.formatted(), label: 'Час у грі' }
   ];
   grid.innerHTML = stats.map(s => `
     <div class="stat-box">
