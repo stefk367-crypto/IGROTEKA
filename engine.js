@@ -459,13 +459,19 @@ const DailyBonus = {
 /* ---------- Щоденні місії: 3 випадкові (за датою) завдання на день,
    дають багато XP одразу при виконанні — привід зайти щодня. ---------- */
 const MISSION_POOL = [
+  { id: 'coins30',    desc: 'Заробити 30 монет за сьогодні',         xp: 35,  target: 30,  type: 'coins' },
   { id: 'coins50',    desc: 'Заробити 50 монет за сьогодні',         xp: 60,  target: 50,  type: 'coins' },
   { id: 'coins120',   desc: 'Заробити 120 монет за сьогодні',        xp: 110, target: 120, type: 'coins' },
+  { id: 'coins250',   desc: 'Заробити 250 монет за сьогодні',        xp: 170, target: 250, type: 'coins' },
   { id: 'games2',     desc: 'Зіграти у 2 різні ігри',                xp: 50,  target: 2,   type: 'uniqueGames' },
   { id: 'games3',     desc: 'Зіграти у 3 різні ігри',                xp: 80,  target: 3,   type: 'uniqueGames' },
+  { id: 'games4',     desc: 'Зіграти у 4 різні ігри',                xp: 110, target: 4,   type: 'uniqueGames' },
+  { id: 'sessions1',  desc: 'Зіграти хоча б 1 раунд',                xp: 20,  target: 1,   type: 'sessions' },
   { id: 'sessions3',  desc: 'Зіграти 3 раунди (будь-які ігри)',      xp: 40,  target: 3,   type: 'sessions' },
   { id: 'sessions6',  desc: 'Зіграти 6 раундів (будь-які ігри)',     xp: 90,  target: 6,   type: 'sessions' },
-  { id: 'achieve1',   desc: 'Розблокувати нове досягнення',          xp: 100, target: 1,   type: 'achievements' }
+  { id: 'sessions10', desc: 'Зіграти 10 раундів (будь-які ігри)',    xp: 140, target: 10,  type: 'sessions' },
+  { id: 'achieve1',   desc: 'Розблокувати нове досягнення',          xp: 100, target: 1,   type: 'achievements' },
+  { id: 'achieve2',   desc: 'Розблокувати 2 нові досягнення за день', xp: 190, target: 2,  type: 'achievements' }
 ];
 
 const DailyMissions = {

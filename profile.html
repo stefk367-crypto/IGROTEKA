@@ -210,7 +210,7 @@
   <section class="panel">
     <h2 class="section-title">🎯 Щоденні місії</h2>
     <div class="missions-list" id="missionsList"></div>
-    <div class="missions-reset-note">Нові 3 місії — щодня опівночі. Не встиг — нічого не горить, просто без бонусного XP.</div>
+    <div class="missions-reset-note">Нові 3 місії — щодня опівночі (<span id="missionsCountdown">—</span>). Не встиг — нічого не горить, просто без бонусного XP.</div>
   </section>
 
   <section class="panel">
@@ -351,6 +351,32 @@ function buildMissionsList() {
   }).join('');
 }
 buildMissionsList();
+
+// Місії скидаються по UTC-даті (Engine.DailyMissions.todayStr() бере
+// toISOString()), тому відлік веде саме до UTC-півночі, а не до
+// локальної — інакше таймер показав би 00:00:00 раніше, ніж місії
+// реально оновляться.
+(function startMissionsCountdown() {
+  const el = document.getElementById('missionsCountdown');
+  if (!el) return;
+  let lastDateStr = Engine.DailyMissions.todayStr();
+  function render() {
+    const now = new Date();
+    const nextUtcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    const diff = Math.max(0, nextUtcMidnight - now);
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    el.textContent = `${h}:${m}:${s}`;
+    const curDateStr = Engine.DailyMissions.todayStr();
+    if (curDateStr !== lastDateStr) {
+      lastDateStr = curDateStr;
+      buildMissionsList();
+    }
+  }
+  render();
+  setInterval(render, 1000);
+})();
 
 function buildSkinsGrid() {
   const grid = document.getElementById('skinsGrid');
