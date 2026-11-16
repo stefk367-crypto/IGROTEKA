@@ -216,6 +216,7 @@ function checkGameState() {
         wonAnnounced = true;
         sound.win();
         document.getElementById('msg').textContent = 'ВІТАЄМО! ПЛИТКУ 2048 ЗІБРАНО — МОЖНА ГРАТИ ДАЛІ';
+        try { localStorage.setItem('2048_tile_reached', '1'); } catch (e) {}
       }
     }
   }
