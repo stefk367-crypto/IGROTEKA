@@ -711,7 +711,7 @@ const ACHIEVEMENTS = [
   { id: 'flappy_25',    name: 'Ас неба',        icon: '🦅', desc: 'Рахунок 25+ у Літайлику',          check: () => safeNum('flappy_best') >= 25 },
   { id: 'simon_5',      name: "Пам'ять-майстер",icon: '🧠', desc: '5+ раундів у Саймоні',             check: () => safeNum('simon_best') >= 5 },
   { id: 'simon_10',     name: "Залізна пам'ять",icon: '🧩', desc: '10+ раундів у Саймоні',            check: () => safeNum('simon_best') >= 10 },
-  { id: '2048_tile',    name: 'Зібрав 2048',    icon: '🀄', desc: 'Дійти до плитки 2048',             check: () => safeNum('2048_best') >= 2048 },
+  { id: '2048_tile',    name: 'Зібрав 2048',    icon: '🀄', desc: 'Дійти до плитки 2048',             check: () => safeNum('2048_tile_reached') >= 1 },
   { id: 'pong_5wins',   name: 'Король ракетки', icon: '🏓', desc: 'Перемогти комп\u2019ютер у Понг 5 разів', check: () => safeNum('pong_wins') >= 5 },
   { id: 'arkanoid_win', name: 'Руйнівник',      icon: '🧱', desc: 'Розбити всі цеглинки в Цеглинках', check: () => safeNum('arkanoid_won') >= 1 },
   { id: 'platformer_win', name: 'Скорений стрибок', icon: '🏃', desc: 'Зібрати всі монети в Стрибуні', check: () => safeNum('platformer_won') >= 1 },
