@@ -19,7 +19,7 @@
   const KNOWN_KEYS = [
     'koinzal_total_earned', 'koinzal_total_spent', 'koinzal_xp', 'koinzal_xp_boost_until', 'koinzal_theme',
     'koinzal_owned_themes', 'koinzal_frame', 'koinzal_owned_frames',
-    'koinzal_daily_date', 'koinzal_daily_streak'
+    'koinzal_daily_date', 'koinzal_daily_streak', 'koinzal_total_playtime_seconds'
   ];
   function collectBestKeys() {
     const out = [];
@@ -53,7 +53,7 @@
 
       const isNumeric = k.endsWith('_best') || k === 'koinzal_total_earned' ||
         k === 'koinzal_total_spent' || k === 'koinzal_daily_streak' || k === 'koinzal_xp' ||
-        k === 'koinzal_xp_boost_until';
+        k === 'koinzal_xp_boost_until' || k === 'koinzal_total_playtime_seconds';
 
       if (isNumeric) {
         const rv = Number(remote) || 0, lv = Number(local) || 0;
