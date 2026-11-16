@@ -152,6 +152,7 @@
   .mission-row.done .mission-bar-fill { background: #4caf7d; }
   .mission-progress-num { font-size: 11px; color: #6b6050; margin-top: 4px; text-align: right; }
   .missions-reset-note { margin-top: 10px; font-size: 11.5px; color: #8a8069; font-style: italic; text-align: center; }
+  .missions-countdown { font-size: 17px; font-weight: 800; font-style: normal; font-family: var(--font-display); color: var(--ink); letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
 
   /* Скіни та немонетні нагороди за рівень */
   .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
@@ -210,7 +211,7 @@
   <section class="panel">
     <h2 class="section-title">🎯 Щоденні місії</h2>
     <div class="missions-list" id="missionsList"></div>
-    <div class="missions-reset-note">Нові 3 місії — щодня опівночі (<span id="missionsCountdown">—</span>). Не встиг — нічого не горить, просто без бонусного XP.</div>
+    <div class="missions-reset-note">Нові 3 місії — щодня опівночі (<span class="missions-countdown" id="missionsCountdown">—</span>). Не встиг — нічого не горить, просто без бонусного XP.</div>
   </section>
 
   <section class="panel">
