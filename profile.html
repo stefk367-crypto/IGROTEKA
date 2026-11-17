@@ -431,6 +431,10 @@ Engine.RewardsBadge.markSeen();
   const owned = Engine.ThemeManager.getOwned().length;
   const themesTotal = Object.keys(Engine.THEMES).length;
   const streak = Engine.DailyBonus.getStreak();
+  const dailyStatus = Engine.DailyMissions.getStatus();
+  const dailyDone = dailyStatus.filter(m => m.done).length;
+  const permStatus = Engine.PermanentQuests.getStatus();
+  const permDone = permStatus.filter(q => q.done).length;
 
   const stats = [
     { num: Engine.CoinBank.get(), label: 'Монет зараз' },
@@ -438,7 +442,9 @@ Engine.RewardsBadge.markSeen();
     { num: `${unlocked}/${total}`, label: 'Досягнення' },
     { num: `${owned}/${themesTotal}`, label: 'Тем зібрано' },
     { num: streak, label: 'Серія входів, дн.' },
-    { num: Engine.PlayTime.formatted(), label: 'Час у грі' }
+    { num: Engine.PlayTime.formatted(), label: 'Час у грі' },
+    { num: `${dailyDone}/${dailyStatus.length}`, label: 'Місій сьогодні' },
+    { num: `${permDone}/${permStatus.length}`, label: 'Постійних завдань' }
   ];
   grid.innerHTML = stats.map(s => `
     <div class="stat-box">

@@ -623,7 +623,17 @@ const PERMANENT_QUESTS = [
   { id: 'p_sessions200',desc: 'Зіграти 200 раундів за весь час',       xp: 220, coins: 110, target: 200,  type: 'sessionsEver' },
   { id: 'p_play1h',     desc: 'Провести 1 годину в грі',               xp: 60,  coins: 25,  target: 3600, type: 'playtimeSeconds' },
   { id: 'p_play10h',    desc: 'Провести 10 годин в грі',               xp: 300, coins: 150, target: 36000,type: 'playtimeSeconds' },
-  { id: 'p_level25',    desc: 'Досягти 25 рівня',                      xp: 150, coins: 70,  target: 25,   type: 'level' }
+  { id: 'p_level25',    desc: 'Досягти 25 рівня',                      xp: 150, coins: 70,  target: 25,   type: 'level' },
+  { id: 'p_coins6000',  desc: 'Заробити 6000 монет за весь час',       xp: 400, coins: 250, target: 6000, type: 'coinsTotal' },
+  { id: 'p_coins12000', desc: 'Заробити 12000 монет за весь час',      xp: 600, coins: 400, target: 12000,type: 'coinsTotal' },
+  { id: 'p_sessions500',desc: 'Зіграти 500 раундів за весь час',       xp: 450, coins: 200, target: 500,  type: 'sessionsEver' },
+  { id: 'p_sessions1000',desc:'Зіграти 1000 раундів за весь час',      xp: 700, coins: 350, target: 1000, type: 'sessionsEver' },
+  { id: 'p_play25h',    desc: 'Провести 25 годин в грі',               xp: 550, coins: 280, target: 90000,type: 'playtimeSeconds' },
+  { id: 'p_play50h',    desc: 'Провести 50 годин в грі',               xp: 900, coins: 450, target: 180000,type: 'playtimeSeconds' },
+  { id: 'p_level50',    desc: 'Досягти 50 рівня',                      xp: 400, coins: 180, target: 50,   type: 'level' },
+  { id: 'p_level100',   desc: 'Досягти 100 рівня',                     xp: 800, coins: 350, target: 100,  type: 'level' },
+  { id: 'p_achieve10',  desc: 'Розблокувати 10 досягнень',             xp: 300, coins: 130, target: 10,   type: 'achievementsEver' },
+  { id: 'p_achieve25',  desc: 'Розблокувати 25 досягнень',             xp: 550, coins: 260, target: 25,   type: 'achievementsEver' }
 ];
 
 const PermanentQuests = {
@@ -638,6 +648,7 @@ const PermanentQuests = {
     if (type === 'sessionsEver') return safeNum('koinzal_sessions_ever');
     if (type === 'playtimeSeconds') return safeNum('koinzal_total_playtime_seconds');
     if (type === 'level') return LevelManager.getLevel();
+    if (type === 'achievementsEver') return Achievements.unlocked().length;
     if (type === 'uniqueGamesEver') {
       try { return (JSON.parse(localStorage.getItem('koinzal_games_played_ever') || '[]')).length; } catch (e) { return 0; }
     }
