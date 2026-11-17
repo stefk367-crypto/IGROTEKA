@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+  <link rel="icon" href="icons/favicon.ico" sizes="any">
+  <link rel="icon" href="icons/favicon-32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="icons/favicon-16.png" type="image/png" sizes="16x16">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Завдання — ІГРОТЕКА</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  .wrap { max-width: 760px; margin: 0 auto; padding: 32px 20px 70px; }
+  .back {
+    display: inline-block; font-family: var(--font-display); font-weight: 600; font-size: 12px;
+    color: var(--text-dim); margin-bottom: 24px; border: 1px solid var(--line);
+    padding: 8px 12px; border-radius: 8px;
+  }
+  .back:hover { color: var(--yellow); border-color: var(--yellow); }
+  header { text-align: center; margin-bottom: 32px; }
+  h1 { font-family: var(--font-display); font-weight: 800; font-size: 32px; color: var(--text); margin: 0 0 8px; }
+  .progress-text { color: var(--text-dim); font-size: 14px; }
+
+  .panel {
+    background: var(--paper); color: var(--ink); border-radius: 18px;
+    box-shadow: 0 10px 0 -4px rgba(0,0,0,0.18), 0 14px 24px -10px rgba(0,0,0,0.45);
+    padding: 28px 26px; margin-bottom: 24px;
+  }
+  h2.section-title { font-family: var(--font-display); font-weight: 800; font-size: 18px; margin: 0 0 14px; color: var(--ink); }
+
+  .missions-list { display: flex; flex-direction: column; gap: 10px; }
+  .mission-row { background: var(--paper-alt); border-radius: 12px; padding: 12px 14px; }
+  .mission-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
+  .mission-desc { font-size: 13px; font-weight: 600; }
+  .mission-xp { font-family: var(--font-display); font-weight: 800; font-size: 12.5px; color: var(--magenta); flex: 0 0 auto; }
+  .mission-row.done .mission-desc { color: #3f7a2f; }
+  .mission-row.done .mission-xp::before { content: '✅ '; }
+  .mission-bar-track { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.08); overflow: hidden; }
+  .mission-bar-fill { height: 100%; border-radius: 999px; background: var(--magenta); transition: width .3s ease; }
+  .mission-row.done .mission-bar-fill { background: #4caf7d; }
+  .mission-progress-num { font-size: 11px; color: #6b6050; margin-top: 4px; text-align: right; }
+  .missions-reset-note { margin-top: 10px; font-size: 11.5px; color: #8a8069; font-style: italic; text-align: center; }
+  .missions-countdown { font-size: 17px; font-weight: 800; font-style: normal; font-family: var(--font-display); color: var(--ink); letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <a class="back" href="index.html">← До полиці</a>
+  <header>
+    <h1>📜 Завдання</h1>
+    <p class="progress-text" id="progress">—</p>
+  </header>
+
+  <section class="panel">
+    <h2 class="section-title">🏁 Постійні завдання</h2>
+    <div class="missions-list" id="permQuestsList"></div>
+    <div class="missions-reset-note">Не скидаються — рахуються за весь час гри. Кожне виконується один раз.</div>
+  </section>
+
+  <section class="panel">
+    <h2 class="section-title">🎯 Щоденні місії</h2>
+    <div class="missions-list" id="missionsList"></div>
+    <div class="missions-reset-note">Нові 3 місії — щодня опівночі (<span class="missions-countdown" id="missionsCountdown">—</span>). Не встиг — нічого не горить, просто без бонусного XP.</div>
+  </section>
+</div>
+
+<script src="engine.js"></script>
+<script>
+function buildPermQuestsList() {
+  const wrap = document.getElementById('permQuestsList');
+  const quests = Engine.PermanentQuests.getStatus();
+  wrap.innerHTML = quests.map(q => {
+    const pct = Math.round((q.progress / q.target) * 100);
+    return `<div class="mission-row ${q.done ? 'done' : ''}">
+      <div class="mission-top">
+        <span class="mission-desc">${q.desc}</span>
+        <span class="mission-xp">+${q.xp} XP${q.coins ? ' +' + q.coins + '🪙' : ''}</span>
+      </div>
+      <div class="mission-bar-track"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mission-progress-num">${q.progress} / ${q.target}</div>
+    </div>`;
+  }).join('');
+}
+
+function buildMissionsList() {
+  const wrap = document.getElementById('missionsList');
+  const missions = Engine.DailyMissions.getStatus();
+  wrap.innerHTML = missions.map(m => {
+    const pct = Math.round((m.progress / m.target) * 100);
+    return `<div class="mission-row ${m.done ? 'done' : ''}">
+      <div class="mission-top">
+        <span class="mission-desc">${m.desc}</span>
+        <span class="mission-xp">+${m.xp} XP</span>
+      </div>
+      <div class="mission-bar-track"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mission-progress-num">${m.progress} / ${m.target}</div>
+    </div>`;
+  }).join('');
+  const permDone = Engine.PermanentQuests.getStatus().filter(q => q.done).length;
+  const permTotal = Engine.PermanentQuests.getStatus().length;
+  const dailyDone = missions.filter(m => m.done).length;
+  document.getElementById('progress').textContent = `Постійних: ${permDone} з ${permTotal} · Щоденних: ${dailyDone} з ${missions.length} виконано сьогодні`;
+}
+
+buildPermQuestsList();
+buildMissionsList();
+
+// Місії скидаються по UTC-даті, тому відлік веде саме до UTC-півночі.
+(function startMissionsCountdown() {
+  const el = document.getElementById('missionsCountdown');
+  if (!el) return;
+  let lastDateStr = Engine.DailyMissions.todayStr();
+  function render() {
+    const now = new Date();
+    const nextUtcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
+    const diff = Math.max(0, nextUtcMidnight - now);
+    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
+    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
+    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
+    el.textContent = `${h}:${m}:${s}`;
+    const curDateStr = Engine.DailyMissions.todayStr();
+    if (curDateStr !== lastDateStr) {
+      lastDateStr = curDateStr;
+      buildMissionsList();
+    }
+  }
+  render();
+  setInterval(render, 1000);
+})();
+</script>
+</body>
+</html>

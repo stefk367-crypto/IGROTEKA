@@ -139,20 +139,12 @@
   .level-row.reached .lv-reward, .level-row.current .lv-reward { color: #4a4636; }
   .beyond-row { margin-top: 4px; text-align: center; font-size: 12px; color: #6b6050; font-style: italic; }
 
-  /* Щоденні місії */
-  .missions-list { display: flex; flex-direction: column; gap: 10px; }
-  .mission-row { background: var(--paper-alt); border-radius: 12px; padding: 12px 14px; }
-  .mission-top { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 8px; }
-  .mission-desc { font-size: 13px; font-weight: 600; }
-  .mission-xp { font-family: var(--font-display); font-weight: 800; font-size: 12.5px; color: var(--magenta); flex: 0 0 auto; }
-  .mission-row.done .mission-desc { color: #3f7a2f; }
-  .mission-row.done .mission-xp::before { content: '✅ '; }
-  .mission-bar-track { height: 8px; border-radius: 999px; background: rgba(0,0,0,0.08); overflow: hidden; }
-  .mission-bar-fill { height: 100%; border-radius: 999px; background: var(--magenta); transition: width .3s ease; }
-  .mission-row.done .mission-bar-fill { background: #4caf7d; }
-  .mission-progress-num { font-size: 11px; color: #6b6050; margin-top: 4px; text-align: right; }
-  .missions-reset-note { margin-top: 10px; font-size: 11.5px; color: #8a8069; font-style: italic; text-align: center; }
-  .missions-countdown { font-size: 17px; font-weight: 800; font-style: normal; font-family: var(--font-display); color: var(--ink); letter-spacing: 0.5px; font-variant-numeric: tabular-nums; }
+  .quests-link {
+    display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-display);
+    font-weight: 700; font-size: 13px; padding: 10px 18px; border-radius: 10px;
+    background: var(--magenta); color: #fff; text-decoration: none;
+  }
+  .quests-link:hover { filter: brightness(1.08); }
 
   /* Скіни та немонетні нагороди за рівень */
   .skins-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 12px; }
@@ -208,16 +200,10 @@
     </div>
   </div>
 
-  <section class="panel">
-    <h2 class="section-title">🎯 Щоденні місії</h2>
-    <div class="missions-list" id="missionsList"></div>
-    <div class="missions-reset-note">Нові 3 місії — щодня опівночі (<span class="missions-countdown" id="missionsCountdown">—</span>). Не встиг — нічого не горить, просто без бонусного XP.</div>
-  </section>
-
-  <section class="panel">
-    <h2 class="section-title">🏁 Постійні завдання</h2>
-    <div class="missions-list" id="permQuestsList"></div>
-    <div class="missions-reset-note">Не скидаються — рахуються за весь час гри. Кожне виконується один раз.</div>
+  <section class="panel" style="text-align:center;">
+    <h2 class="section-title">📜 Завдання</h2>
+    <p style="margin:0 0 14px; color:#6b6050; font-size:13px;">Постійні завдання за весь час гри та щоденні місії — на окремій сторінці.</p>
+    <a href="quests.html" class="quests-link">Перейти до завдань →</a>
   </section>
 
   <section class="panel">
@@ -340,66 +326,6 @@ function paintRingAvatar() {
     const reward = Engine.LevelManager.rewardForLevel(p.level + 1);
     document.getElementById('xpSub').textContent = `За наступний рівень — бонус +${reward} монет.`;
   }
-})();
-
-function buildPermQuestsList() {
-  const wrap = document.getElementById('permQuestsList');
-  const quests = Engine.PermanentQuests.getStatus();
-  wrap.innerHTML = quests.map(q => {
-    const pct = Math.round((q.progress / q.target) * 100);
-    return `<div class="mission-row ${q.done ? 'done' : ''}">
-      <div class="mission-top">
-        <span class="mission-desc">${q.desc}</span>
-        <span class="mission-xp">+${q.xp} XP${q.coins ? ' +' + q.coins + '🪙' : ''}</span>
-      </div>
-      <div class="mission-bar-track"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
-      <div class="mission-progress-num">${q.progress} / ${q.target}</div>
-    </div>`;
-  }).join('');
-}
-buildPermQuestsList();
-
-function buildMissionsList() {
-  const wrap = document.getElementById('missionsList');
-  const missions = Engine.DailyMissions.getStatus();
-  wrap.innerHTML = missions.map(m => {
-    const pct = Math.round((m.progress / m.target) * 100);
-    return `<div class="mission-row ${m.done ? 'done' : ''}">
-      <div class="mission-top">
-        <span class="mission-desc">${m.desc}</span>
-        <span class="mission-xp">+${m.xp} XP</span>
-      </div>
-      <div class="mission-bar-track"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
-      <div class="mission-progress-num">${m.progress} / ${m.target}</div>
-    </div>`;
-  }).join('');
-}
-buildMissionsList();
-
-// Місії скидаються по UTC-даті (Engine.DailyMissions.todayStr() бере
-// toISOString()), тому відлік веде саме до UTC-півночі, а не до
-// локальної — інакше таймер показав би 00:00:00 раніше, ніж місії
-// реально оновляться.
-(function startMissionsCountdown() {
-  const el = document.getElementById('missionsCountdown');
-  if (!el) return;
-  let lastDateStr = Engine.DailyMissions.todayStr();
-  function render() {
-    const now = new Date();
-    const nextUtcMidnight = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() + 1, 0, 0, 0));
-    const diff = Math.max(0, nextUtcMidnight - now);
-    const h = String(Math.floor(diff / 3600000)).padStart(2, '0');
-    const m = String(Math.floor((diff % 3600000) / 60000)).padStart(2, '0');
-    const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, '0');
-    el.textContent = `${h}:${m}:${s}`;
-    const curDateStr = Engine.DailyMissions.todayStr();
-    if (curDateStr !== lastDateStr) {
-      lastDateStr = curDateStr;
-      buildMissionsList();
-    }
-  }
-  render();
-  setInterval(render, 1000);
 })();
 
 function buildSkinsGrid() {
