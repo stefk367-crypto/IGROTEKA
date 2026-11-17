@@ -610,6 +610,73 @@ const DailyMissions = {
   }
 };
 
+/* ---------- Постійні завдання: не скидаються, виконуються один раз
+   за весь час гри на основі довічної статистики (монети/час/ігри/
+   рівень), яка й так синхронізується між пристроями. ---------- */
+const PERMANENT_QUESTS = [
+  { id: 'p_coins300',   desc: 'Заробити 300 монет за весь час',        xp: 50,  coins: 20,  target: 300,  type: 'coinsTotal' },
+  { id: 'p_coins1000',  desc: 'Заробити 1000 монет за весь час',       xp: 120, coins: 60,  target: 1000, type: 'coinsTotal' },
+  { id: 'p_coins3000',  desc: 'Заробити 3000 монет за весь час',       xp: 250, coins: 150, target: 3000, type: 'coinsTotal' },
+  { id: 'p_games6',     desc: 'Зіграти у 6 різних ігор за весь час',   xp: 80,  coins: 40,  target: 6,    type: 'uniqueGamesEver' },
+  { id: 'p_games13',    desc: 'Спробувати всі 13 ігор порталу',        xp: 200, coins: 100, target: 13,   type: 'uniqueGamesEver' },
+  { id: 'p_sessions50', desc: 'Зіграти 50 раундів за весь час',        xp: 90,  coins: 40,  target: 50,   type: 'sessionsEver' },
+  { id: 'p_sessions200',desc: 'Зіграти 200 раундів за весь час',       xp: 220, coins: 110, target: 200,  type: 'sessionsEver' },
+  { id: 'p_play1h',     desc: 'Провести 1 годину в грі',               xp: 60,  coins: 25,  target: 3600, type: 'playtimeSeconds' },
+  { id: 'p_play10h',    desc: 'Провести 10 годин в грі',               xp: 300, coins: 150, target: 36000,type: 'playtimeSeconds' },
+  { id: 'p_level25',    desc: 'Досягти 25 рівня',                      xp: 150, coins: 70,  target: 25,   type: 'level' }
+];
+
+const PermanentQuests = {
+  KEY_CLAIMED: 'koinzal_perm_quests_claimed',
+
+  getClaimed() {
+    try { return JSON.parse(localStorage.getItem(this.KEY_CLAIMED) || '[]'); } catch (e) { return []; }
+  },
+
+  _counterFor(type) {
+    if (type === 'coinsTotal') return CoinBank.getTotalEarned();
+    if (type === 'sessionsEver') return safeNum('koinzal_sessions_ever');
+    if (type === 'playtimeSeconds') return safeNum('koinzal_total_playtime_seconds');
+    if (type === 'level') return LevelManager.getLevel();
+    if (type === 'uniqueGamesEver') {
+      try { return (JSON.parse(localStorage.getItem('koinzal_games_played_ever') || '[]')).length; } catch (e) { return 0; }
+    }
+    return 0;
+  },
+
+  // Усі завдання разом із прогресом і статусом — для відображення в UI.
+  getStatus() {
+    const claimed = this.getClaimed();
+    return PERMANENT_QUESTS.map(q => {
+      const progress = Math.min(q.target, this._counterFor(q.type));
+      return { ...q, progress, done: progress >= q.target, claimed: claimed.includes(q.id) };
+    });
+  },
+
+  // Перевіряє всі завдання й одразу видає нагороду за щойно виконані.
+  // Викликається на кожному завантаженні сторінки (як і ачивки) —
+  // claimed-список локальний для пристрою, тому повторний виклик
+  // ніколи не видає нагороду за те саме завдання двічі.
+  checkAndClaim() {
+    const claimed = new Set(this.getClaimed());
+    const toastLines = [];
+    PERMANENT_QUESTS.forEach(q => {
+      if (claimed.has(q.id)) return;
+      if (this._counterFor(q.type) >= q.target) {
+        LevelManager.addXp(q.xp);
+        if (q.coins > 0) CoinBank.addSilent(q.coins);
+        claimed.add(q.id);
+        toastLines.push(`🏁 ${q.desc} · +${q.xp} XP${q.coins ? ' · +' + q.coins + '🪙' : ''}`);
+      }
+    });
+    if (toastLines.length) {
+      try { localStorage.setItem(this.KEY_CLAIMED, JSON.stringify(Array.from(claimed))); } catch (e) {}
+      showToast(toastLines);
+    }
+    return toastLines;
+  }
+};
+
 /* ---------- Теми: акцентні кольори, які можна купити в магазині ---------- */
 const THEMES = {
   default:  { name: 'Смарагд',   price: 0,   cyan: '#5fd0c2', magenta: '#ef6b52', yellow: '#f0a93b', bg: '#15302e', bgPanel: '#1d3e3b', bgPanelRaised: '#244a46', line: '#35564f' },
@@ -812,6 +879,12 @@ function showToast(messages) {
   }
 })();
 
+// Постійні завдання перевіряються так само на кожному завантаженні —
+// окремим тостом, щоб не змішуватись із ачивками.
+(function checkPermanentQuestsOnLoad() {
+  PermanentQuests.checkAndClaim();
+})();
+
 // Заднім числом видає рамки/ексклюзивні теми за рівні, які гравець
 // пройшов ДО того, як ці нагороди з'явилися в LEVEL_REWARDS.
 (function grantLevelRewardsOnLoad() {
@@ -850,6 +923,10 @@ const KNOWN_GAME_IDS = [
         played.push(pageId);
         localStorage.setItem('koinzal_games_played_ever', JSON.stringify(played));
       }
+      // Довічний лічильник раундів (для постійних завдань) — на відміну
+      // від DailyMissions.KEY_SESSIONS ніколи не скидається.
+      localStorage.setItem('koinzal_sessions_ever', safeNum('koinzal_sessions_ever') + 1);
+      pingSync();
     }
   } catch (e) {}
 })();
@@ -980,4 +1057,4 @@ const PlayTime = {
   }, TICK_SECONDS * 1000);
 })();
 
-window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, escapeHtml, safeAvatarImg, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge, PlayTime };
+window.Engine = { SoundFX, Particles, ScreenShake, Loop, lerp, clamp, aabb, escapeHtml, safeAvatarImg, mountMuteButton, mountFullscreenButton, mountCoinBadge, CoinBank, THEMES, EXCLUSIVE_THEMES, ThemeManager, FRAMES, FrameManager, LEVEL_REWARDS, DailyBonus, DailyMissions, PermanentQuests, Achievements, LevelManager, XpBooster, XpExchange, RewardsBadge, PlayTime };

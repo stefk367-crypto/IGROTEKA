@@ -215,6 +215,12 @@
   </section>
 
   <section class="panel">
+    <h2 class="section-title">🏁 Постійні завдання</h2>
+    <div class="missions-list" id="permQuestsList"></div>
+    <div class="missions-reset-note">Не скидаються — рахуються за весь час гри. Кожне виконується один раз.</div>
+  </section>
+
+  <section class="panel">
     <h2 class="section-title">Скіни та нагороди за рівень</h2>
     <div class="skins-grid" id="skinsGrid"></div>
   </section>
@@ -335,6 +341,23 @@ function paintRingAvatar() {
     document.getElementById('xpSub').textContent = `За наступний рівень — бонус +${reward} монет.`;
   }
 })();
+
+function buildPermQuestsList() {
+  const wrap = document.getElementById('permQuestsList');
+  const quests = Engine.PermanentQuests.getStatus();
+  wrap.innerHTML = quests.map(q => {
+    const pct = Math.round((q.progress / q.target) * 100);
+    return `<div class="mission-row ${q.done ? 'done' : ''}">
+      <div class="mission-top">
+        <span class="mission-desc">${q.desc}</span>
+        <span class="mission-xp">+${q.xp} XP${q.coins ? ' +' + q.coins + '🪙' : ''}</span>
+      </div>
+      <div class="mission-bar-track"><div class="mission-bar-fill" style="width:${pct}%"></div></div>
+      <div class="mission-progress-num">${q.progress} / ${q.target}</div>
+    </div>`;
+  }).join('');
+}
+buildPermQuestsList();
 
 function buildMissionsList() {
   const wrap = document.getElementById('missionsList');
