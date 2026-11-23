@@ -268,16 +268,21 @@ const FRAMES = {
 
 // Ексклюзивні теми — так само нагорода за рівень, у магазині за монети не продаються.
 const EXCLUSIVE_THEMES = {
-  aurora:  { name: 'Аврора',  cyan: '#6ee7ff', magenta: '#a78bfa', yellow: '#f5f3ff', bg: '#0b1230', bgPanel: '#131a44', bgPanelRaised: '#1b2458', line: '#2c3868' },
-  phoenix: { name: 'Фенікс',  cyan: '#ff8a3d', magenta: '#ff3d59', yellow: '#ffd23d', bg: '#280a05', bgPanel: '#3a0f08', bgPanelRaised: '#4c150b', line: '#6b2210' }
+  crystal:   { name: 'Кристал',   cyan: '#9fe8ff', magenta: '#5fc9e8', yellow: '#eafcff', bg: '#0a1f28', bgPanel: '#102c38', bgPanelRaised: '#163a48', line: '#255568' },
+  aurora:    { name: 'Аврора',    cyan: '#6ee7ff', magenta: '#a78bfa', yellow: '#f5f3ff', bg: '#0b1230', bgPanel: '#131a44', bgPanelRaised: '#1b2458', line: '#2c3868' },
+  storm:     { name: 'Шторм',     cyan: '#8fa6c9', magenta: '#4a5f8a', yellow: '#c9d6e8', bg: '#141824', bgPanel: '#1c2232', bgPanelRaised: '#262d42', line: '#3a4360' },
+  moonlight: { name: 'Місячне сяйво', cyan: '#c9b8e8', magenta: '#8a6fc9', yellow: '#f0e8ff', bg: '#1a1430', bgPanel: '#241c42', bgPanelRaised: '#302654', line: '#453a70' },
+  phoenix:   { name: 'Фенікс',    cyan: '#ff8a3d', magenta: '#ff3d59', yellow: '#ffd23d', bg: '#280a05', bgPanel: '#3a0f08', bgPanelRaised: '#4c150b', line: '#6b2210' }
 };
 
 // На яких рівнях видаються немонетні нагороди (рамка і/або ексклюзивна тема).
 const LEVEL_REWARDS = {
   5:   { frame: 'bronze' },
+  10:  { theme: 'crystal' },
   15:  { frame: 'silver' },
   20:  { theme: 'aurora' },
-  30:  { frame: 'gold' },
+  30:  { frame: 'gold', theme: 'storm' },
+  40:  { theme: 'moonlight' },
   50:  { frame: 'emerald', theme: 'phoenix' },
   75:  { frame: 'diamond' },
   100: { frame: 'legendary' }
