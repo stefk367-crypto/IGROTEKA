@@ -32,10 +32,6 @@
 
   input[type=range] { width: 160px; accent-color: #ef6b52; }
 
-  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; }
-  .stat-box { background: var(--paper-alt); border-radius: 10px; padding: 12px; text-align: center; }
-  .stat-box .num { font-family: var(--font-display); font-weight: 800; font-size: 22px; color: var(--ink); }
-  .stat-box .lbl { font-size: 10.5px; color: #7a6b52; letter-spacing: 0.05em; text-transform: uppercase; margin-top: 3px; }
 
   .danger-btn {
     font-family: var(--font-display); font-weight: 700; font-size: 12.5px; padding: 10px 16px;
@@ -66,17 +62,6 @@
     <div class="row">
       <span class="row-label">Повністю вимкнути звук</span>
       <input type="checkbox" id="muted">
-    </div>
-  </div>
-
-  <div class="panel">
-    <h2>Статистика</h2>
-    <div class="stat-grid">
-      <div class="stat-box"><div class="num" id="statLevel">1</div><div class="lbl">Рівень</div></div>
-      <div class="stat-box"><div class="num" id="statCoins">0</div><div class="lbl">Монет зараз</div></div>
-      <div class="stat-box"><div class="num" id="statTotal">0</div><div class="lbl">Зароблено всього</div></div>
-      <div class="stat-box"><div class="num" id="statStreak">0</div><div class="lbl">Днів поспіль</div></div>
-      <div class="stat-box"><div class="num" id="statAch">0/9</div><div class="lbl">Досягнень</div></div>
     </div>
   </div>
 
@@ -115,14 +100,6 @@ mutedEl.addEventListener('change', () => {
   try { localStorage.setItem('koinzal_muted', sound.muted ? '1' : '0'); } catch(e) {}
 });
 
-function refreshStats() {
-  document.getElementById('statLevel').textContent = Engine.LevelManager.getLevel();
-  document.getElementById('statCoins').textContent = Engine.CoinBank.get();
-  document.getElementById('statTotal').textContent = Engine.CoinBank.getTotalEarned();
-  document.getElementById('statStreak').textContent = Engine.DailyBonus.getStreak();
-  document.getElementById('statAch').textContent = Engine.Achievements.unlocked().length + '/' + Engine.Achievements.all().length;
-}
-refreshStats();
 
 // Ігрові рекорди — окремі ключі поза префіксом "koinzal_", тому чистяться явним списком.
 const GAME_RECORD_KEYS = [

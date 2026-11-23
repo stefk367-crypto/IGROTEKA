@@ -418,7 +418,7 @@ Engine.RewardsBadge.markSeen();
   const unlocked = Engine.Achievements.unlocked().length;
   const total = Engine.Achievements.all().length;
   const owned = Engine.ThemeManager.getOwned().length;
-  const themesTotal = Object.keys(Engine.THEMES).length;
+  const themesTotal = Object.keys(Engine.THEMES).length + Object.keys(Engine.EXCLUSIVE_THEMES).length;
   const streak = Engine.DailyBonus.getStreak();
   const dailyStatus = Engine.DailyMissions.getStatus();
   const dailyDone = dailyStatus.filter(m => m.done).length;
