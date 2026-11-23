@@ -190,6 +190,11 @@
       const level = Engine.LevelManager.getLevel();
       const xp = Engine.LevelManager.getXp();
       const achievements = Engine.Achievements.unlocked().length;
+      const coins_total = Engine.CoinBank.getTotalEarned();
+      const playtime_seconds = (function () { try { return Number(localStorage.getItem('koinzal_total_playtime_seconds') || 0); } catch (e) { return 0; } })();
+      const sessions_ever = (function () { try { return Number(localStorage.getItem('koinzal_sessions_ever') || 0); } catch (e) { return 0; } })();
+      const themes_owned = Engine.ThemeManager.getOwned().length;
+      const games_played_ever = (function () { try { return (JSON.parse(localStorage.getItem('koinzal_games_played_ever') || '[]')).length; } catch (e) { return 0; } })();
       const recordKeys = [
         'snake_best', 'tetris_best', '2048_best', 'flappy_best', 'simon_best', 'pong_wins',
         'spaceshooter_best', 'minesweeper_wins', 'moles_best', 'memory_best_moves',
@@ -202,6 +207,7 @@
       try {
         const { error } = await supa.from('public_stats').upsert({
           id: this.user.id, name, avatar_url: avatar, level, xp, achievements, records,
+          coins_total, playtime_seconds, sessions_ever, themes_owned, games_played_ever,
           updated_at: new Date().toISOString()
         });
         if (error) console.error('[koinzal] pushPublicStats failed:', error);

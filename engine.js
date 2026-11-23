@@ -655,6 +655,17 @@ const PermanentQuests = {
     return 0;
   },
 
+  // Той самий розрахунок прогресу, але з готових чисел (наприклад,
+  // із public_stats іншого гравця), без звернення до localStorage і
+  // без поняття "claimed" — для публічного перегляду профілю (player.html).
+  statusFrom(counters) {
+    return PERMANENT_QUESTS.map(q => {
+      const raw = Number(counters[q.type]) || 0;
+      const progress = Math.min(q.target, raw);
+      return { ...q, progress, done: progress >= q.target };
+    });
+  },
+
   // Усі завдання разом із прогресом і статусом — для відображення в UI.
   getStatus() {
     const claimed = this.getClaimed();
@@ -1052,8 +1063,11 @@ const PlayTime = {
   add(seconds) {
     try { localStorage.setItem(this.KEY, safeNum(this.KEY) + seconds); } catch (e) {}
   },
-  formatted() {
-    const total = this.getTotalSeconds();
+  formatted() { return this.format(this.getTotalSeconds()); },
+  // Те саме форматування, але для довільного числа секунд (наприклад,
+  // отриманого з public_stats іншого гравця, а не з localStorage).
+  format(total) {
+    total = Number(total) || 0;
     const h = Math.floor(total / 3600);
     const m = Math.floor((total % 3600) / 60);
     if (h > 0) return `${h} год ${m} хв`;

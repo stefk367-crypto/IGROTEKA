@@ -96,6 +96,12 @@ async function waitForSupaReady(timeoutMs) {
   if (!p) { content.innerHTML = '<div class="empty-note">Гравця не знайдено.</div>'; return; }
 
   const rank = Engine.LevelManager.getRank(p.level);
+  const permStatus = Engine.PermanentQuests.statusFrom({
+    coinsTotal: p.coins_total, uniqueGamesEver: p.games_played_ever,
+    sessionsEver: p.sessions_ever, playtimeSeconds: p.playtime_seconds,
+    level: p.level, achievementsEver: p.achievements
+  });
+  const permDone = permStatus.filter(q => q.done).length;
   const records = p.records || {};
   const recordsHtml = Object.entries(RECORD_LABELS).map(([key, meta]) => {
     const v = records[key] || 0;
@@ -119,6 +125,10 @@ async function waitForSupaReady(timeoutMs) {
         <div class="stat-box"><div class="stat-num">${p.level}</div><div class="stat-label">Рівень</div></div>
         <div class="stat-box"><div class="stat-num">${p.xp}</div><div class="stat-label">Досвід (XP)</div></div>
         <div class="stat-box"><div class="stat-num">${p.achievements || 0}</div><div class="stat-label">Досягнення</div></div>
+        <div class="stat-box"><div class="stat-num">${p.coins_total || 0}</div><div class="stat-label">Зароблено за весь час</div></div>
+        <div class="stat-box"><div class="stat-num">${Engine.PlayTime.format(p.playtime_seconds)}</div><div class="stat-label">Час у грі</div></div>
+        <div class="stat-box"><div class="stat-num">${p.themes_owned || 0}</div><div class="stat-label">Тем зібрано</div></div>
+        <div class="stat-box"><div class="stat-num">${permDone}/${permStatus.length}</div><div class="stat-label">Постійних завдань</div></div>
       </div>
     </div>
     <div class="panel">
