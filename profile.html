@@ -431,6 +431,8 @@ Engine.RewardsBadge.markSeen();
   const total = Engine.Achievements.all().length;
   const owned = Engine.ThemeManager.getOwned().length;
   const themesTotal = Object.keys(Engine.THEMES).length + Object.keys(Engine.EXCLUSIVE_THEMES).length;
+  const framesOwned = Engine.FrameManager.getOwned().filter(id => id !== 'none').length;
+  const framesTotal = Object.keys(Engine.FRAMES).length - 1;
   const streak = Engine.DailyBonus.getStreak();
   const dailyStatus = Engine.DailyMissions.getStatus();
   const dailyDone = dailyStatus.filter(m => m.done).length;
@@ -442,6 +444,7 @@ Engine.RewardsBadge.markSeen();
     { num: Engine.CoinBank.getTotalEarned(), label: 'Зароблено за весь час' },
     { num: `${unlocked}/${total}`, label: 'Досягнення' },
     { num: `${owned}/${themesTotal}`, label: 'Тем зібрано' },
+    { num: `${framesOwned}/${framesTotal}`, label: 'Рамок зібрано' },
     { num: streak, label: 'Серія входів, дн.' },
     { num: Engine.PlayTime.formatted(), label: 'Час у грі' },
     { num: `${dailyDone}/${dailyStatus.length}`, label: 'Місій сьогодні' },
