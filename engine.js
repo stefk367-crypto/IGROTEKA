@@ -272,7 +272,12 @@ const EXCLUSIVE_THEMES = {
   aurora:    { name: 'Аврора',    cyan: '#6ee7ff', magenta: '#a78bfa', yellow: '#f5f3ff', bg: '#0b1230', bgPanel: '#131a44', bgPanelRaised: '#1b2458', line: '#2c3868' },
   storm:     { name: 'Шторм',     cyan: '#8fa6c9', magenta: '#4a5f8a', yellow: '#c9d6e8', bg: '#141824', bgPanel: '#1c2232', bgPanelRaised: '#262d42', line: '#3a4360' },
   moonlight: { name: 'Місячне сяйво', cyan: '#c9b8e8', magenta: '#8a6fc9', yellow: '#f0e8ff', bg: '#1a1430', bgPanel: '#241c42', bgPanelRaised: '#302654', line: '#453a70' },
-  phoenix:   { name: 'Фенікс',    cyan: '#ff8a3d', magenta: '#ff3d59', yellow: '#ffd23d', bg: '#280a05', bgPanel: '#3a0f08', bgPanelRaised: '#4c150b', line: '#6b2210' }
+  phoenix:   { name: 'Фенікс',    cyan: '#ff8a3d', magenta: '#ff3d59', yellow: '#ffd23d', bg: '#280a05', bgPanel: '#3a0f08', bgPanelRaised: '#4c150b', line: '#6b2210' },
+  galaxy:    { name: 'Галактика', cyan: '#7c6fe0', magenta: '#c43ad1', yellow: '#4fd8ff', bg: '#0a0620', bgPanel: '#140b34', bgPanelRaised: '#1e1148', line: '#332066' },
+  magma:     { name: 'Магма',     cyan: '#ff6a3d', magenta: '#ff2d2d', yellow: '#ffb347', bg: '#1f0502', bgPanel: '#330a05', bgPanelRaised: '#471008', line: '#6b1a0c' },
+  platinum:  { name: 'Платина',   cyan: '#e8ecf0', magenta: '#a8b4c0', yellow: '#fafcff', bg: '#1c1f24', bgPanel: '#282c33', bgPanelRaised: '#343942', line: '#4a5058' },
+  eternity:  { name: 'Вічність',  cyan: '#3dd9c4', magenta: '#1a8f7d', yellow: '#e8c874', bg: '#061614', bgPanel: '#0c231f', bgPanelRaised: '#12302a', line: '#1f4a40' },
+  legend:    { name: 'Легенда',   cyan: '#ffd700', magenta: '#8a6d1a', yellow: '#fff4cc', bg: '#120f04', bgPanel: '#201a08', bgPanelRaised: '#2e260c', line: '#4a3c14' }
 };
 
 // На яких рівнях видаються немонетні нагороди (рамка і/або ексклюзивна тема).
@@ -284,8 +289,12 @@ const LEVEL_REWARDS = {
   30:  { frame: 'gold', theme: 'storm' },
   40:  { theme: 'moonlight' },
   50:  { frame: 'emerald', theme: 'phoenix' },
+  60:  { theme: 'galaxy' },
+  70:  { theme: 'magma' },
   75:  { frame: 'diamond' },
-  100: { frame: 'legendary' }
+  80:  { theme: 'platinum' },
+  90:  { theme: 'eternity' },
+  100: { frame: 'legendary', theme: 'legend' }
 };
 
 // Скільки XP треба, щоб піднятися з рівня lvl на lvl+1.
